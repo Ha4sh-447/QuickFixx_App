@@ -86,7 +86,7 @@ fun ProviderDetails(navController: NavController,
         Scaffold(
             topBar = {
                 TopAppBar(title = {
-                    Text(text = "QuickFixx",
+                    Text(text = "Tutor",
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )

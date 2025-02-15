@@ -98,7 +98,8 @@ fun SignUpScreen(
         state.user=user
         Log.d("STATE USER", user.name)
         Log.d("USER START 0","---------------------------")
-        viewModel.getUser(email)
+//        viewModel.getUser(email)
+        viewModel.saveUser(name=user.name, email=user.email, contact = user.contact, password = user.password, role="user", image = "")
         auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 // Account created successfully, now sign in
@@ -107,6 +108,7 @@ fun SignUpScreen(
                     if (task.isSuccessful) {
                         Log.d("USER START 2","---------------------------")
                         // Sign-in success, navigate to home screen
+//                        googleAuthClient.getSignedInUser()?.profilePictureUrl?.let { viewModel.saveUser(name=user.name, email=user.email, contact = user.contact, password = user.password, role="user", image = it) }
                         googleAuthClient.getSignedInUser()?.username?.let {
                             Log.d("SIGNED UP USER",
                                 it
@@ -135,6 +137,7 @@ fun SignUpScreen(
                 ).show()
             }
         }
+//        viewModel.getUser(email)
     }
 
     fun signInWithSameCredentials(email: String, password: String) {
@@ -328,14 +331,14 @@ fun SignUpScreen(
                                     image = "",
                                     id = ""
                                 )
-                                viewModel.saveUser(
-                                    Name.value,
-                                    gmail.value,
-                                    password.value,
-                                    "user",
-                                    Contact.value,
-                                    ""
-                                )
+//                                viewModel.saveUser(
+//                                    Name.value,
+//                                    gmail.value,
+//                                    password.value,
+//                                    "user",
+//                                    Contact.value,
+//                                    ""
+//                                )
                                 Log.d("SAVE USER", Name.value)
                                signUpAndSignIn(gmail.value, password.value, user)
 //                                navController.navigate("home")

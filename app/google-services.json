@@ -2,7 +2,7 @@
   "project_info": {
     "project_number": "742119331727",
     "project_id": "fir-with-springboot-486c1",
-    "storage_bucket": "fir-with-springboot-486c1.appspot.com"
+    "storage_bucket": "fir-with-springboot-486c1.firebasestorage.app"
   },
   "client": [
     {
@@ -13,14 +13,6 @@
         }
       },
       "oauth_client": [
-        {
-          "client_id": "742119331727-j7befmu4ueailcmoj7cj0v4d9l7kls40.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.quickfixx",
-            "certificate_hash": "04fdc73cb383a7a9f372f95ccc1a3ef7a5ffee1d"
-          }
-        },
         {
           "client_id": "742119331727-9c78mcgdcsbp0e9gr7pvp1uj30vf7d4j.apps.googleusercontent.com",
           "client_type": 3

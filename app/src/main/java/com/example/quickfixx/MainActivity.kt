@@ -37,6 +37,7 @@ import com.example.quickfixx.screens.auth.ProviderDetails
 import com.example.quickfixx.screens.auth.SignUpScreen
 import com.example.quickfixx.screens.auth.WelcomePageScreen
 import com.example.quickfixx.ui.theme.QuickFixxTheme
+import com.google.ai.client.generativeai.BuildConfig
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.tasks.Task
@@ -58,12 +59,12 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("CoroutineCreationDuringComposition")
     override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
-            val generativeModel = GenerativeModel(
-
-                modelName = "gemini-pro-vision",
-
-                apiKey = BuildConfig.GOOGLE_API_KEY
-            )
+//            val generativeModel = GenerativeModel(
+//
+//                modelName = "gemini-pro-vision",
+//
+////                apiKey = BuildConfig.GOOGLE_API_KEY
+//            )
 
         Log.d("FIREBASE MESSAGING", "STARTED")
         // Get the device token

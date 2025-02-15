@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -84,8 +85,10 @@ fun HomePage(
 //    user : User?,
     onSignOut: () -> Unit) {
 
-
     val user = state.user
+//    if (user != null) {
+//        HViewModel.getUser(user.email)
+//    }
 //    val userData = state.userData
 
     user?.let { Log.d("HOME PAGE USER", it.name) }
@@ -129,7 +132,7 @@ fun HomePage(
                     .padding(0.dp),
                 title = {
                     Text(
-                        text = "QuickFixx",
+                        text = "Tutor",
                         fontWeight = FontWeight.Bold,
                         fontSize = 30.sp,
                         color = Color.Black,
@@ -163,7 +166,7 @@ fun HomePage(
                         selected = selectedItemIndex == index,
                         onClick = {
                             selectedItemIndex = index
-                             navController.navigate(item.route)
+                            navController.navigate(item.route)
                         },
                         label = {
                             Text(text = item.title)
@@ -202,8 +205,8 @@ fun HomePage(
                     .padding(top = 10.dp)
                     .padding(30.dp)
 //                    .clip(RoundedCornerShape(10.dp))
-//                    .background(Color.White)
-                    .height(70.dp)
+                    .background(Color.Red)
+                    .height(100.dp)
                     .fillMaxSize()
             ) {
                 Box(
@@ -223,7 +226,7 @@ fun HomePage(
                     }
 
                     Text(
-                        text = "Welcome to Quickfixx",
+                        text = "Welcome to Tutor",
                         modifier = Modifier
                             .padding(top = 15.dp),
                         style = MaterialTheme.typography.titleMedium,
@@ -234,38 +237,39 @@ fun HomePage(
             ServicesSection(
                 services = listOf(
                     Services(
-                        title = "Electrician",
+                        title = "Microprocessors",
                         icon = Icons.Rounded.ElectricalServices,
                         description = "Electrician icon",
-                        image = R.drawable.electric_repair_2
+                        image = R.drawable.img
                     ),
                     Services(
-                        title = "Carpenter",
+                        title = "Data Structures",
                         icon = Icons.Rounded.Carpenter,
                         description = "Carpenter icon",
-                        image = R.drawable.electric_repair
+                        image = R.drawable.dssa
                     ),
                     Services(
-                        title = "Plumber",
+                        title = "Mobile Computing",
                         icon = Icons.Rounded.Plumbing,
                         description = "Plumber icon",
-                        image = R.drawable.electric_repair_2
+                        image = R.drawable.mobile_computing
                     ),
                     Services(
-                        title = "Housekeeping",
+                        title = "Engineering Maths",
                         icon = Icons.Rounded.House,
                         description = "Housekeeping icon",
-                        image = R.drawable.electric_repair
+                        image = R.drawable.maths
                     )
                 ), navController
             )
             Spacer(modifier = Modifier
                 .size(20.dp)
+                .background(color = Color.Green)
             )
-            Text(
-                text = "Hello world",
-                color = Color.Black
-            )
+//            Text(
+//                text = "Hello world",
+//                color = Color.Black
+//            )
         }
     }
 }
@@ -286,62 +290,62 @@ fun ServicesSection(services: List<Services>, navController: NavController) {
 //                .verticalScroll(rememberScrollState())
         ) {
             Text(
-                text = "Services",
+                text = "Subjects",
                 style = MaterialTheme.typography.headlineLarge,
                 modifier = Modifier.padding(15.dp),
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.ExtraBold
             )
-            RenderIcons(
-                list = listOf(
-                    ServiceIcon(
-                        icon = Icons.Rounded.AcUnit,
-                        route = "electricians",
-                        tabIndex = 0
-                    ),
-                    ServiceIcon(
-                        icon = Icons.Outlined.Bathroom,
-                        route = "electricians",
-                        tabIndex = 1
-                    ),
-                    ServiceIcon(
-                        icon = Icons.Outlined.ElectricalServices,
-                        route = "electricians",
-                        tabIndex = 2
-                    ),
-                    ServiceIcon(
-                        icon = Icons.Outlined.Home,
-                        route = "electricians",
-                        tabIndex = 3
-                    )
-                ),
-                navController
-            )
-
-            RenderIcons(
-                list = listOf(
-                    ServiceIcon(
-                        icon = Icons.Rounded.AcUnit,
-                        route = "electricians",
-                        tabIndex = 0
-                    ),
-                    ServiceIcon(
-                        icon = Icons.Outlined.Bathroom,
-                        route = "electricians",
-                        tabIndex = 1
-                    ),
-                    ServiceIcon(
-                        icon = Icons.Outlined.ElectricalServices,
-                        route = "electricians",
-                        tabIndex = 2
-                    ),
-                    ServiceIcon(
-                        icon = Icons.Outlined.Home,
-                        route = "electricians",
-                        tabIndex = 3
-                    )
-                ),
-                navController
-            )
+//            RenderIcons(s
+//                list = listOf(
+//                    ServiceIcon(
+//                        icon = Icons.Rounded.AcUnit,
+//                        route = "electricians",
+//                        tabIndex = 0
+//                    ),
+//                    ServiceIcon(
+//                        icon = Icons.Outlined.Bathroom,
+//                        route = "electricians",
+//                        tabIndex = 1
+//                    ),
+//                    ServiceIcon(
+//                        icon = Icons.Outlined.ElectricalServices,
+//                        route = "electricians",
+//                        tabIndex = 2
+//                    ),
+//                    ServiceIcon(
+//                        icon = Icons.Outlined.Home,
+//                        route = "electricians",
+//                        tabIndex = 3
+//                    )
+//                ),
+//                navController
+//            )
+//
+//            RenderIcons(
+//                list = listOf(
+//                    ServiceIcon(
+//                        icon = Icons.Rounded.AcUnit,
+//                        route = "electricians",
+//                        tabIndex = 0
+//                    ),
+//                    ServiceIcon(
+//                        icon = Icons.Outlined.Bathroom,
+//                        route = "electricians",
+//                        tabIndex = 1
+//                    ),
+//                    ServiceIcon(
+//                        icon = Icons.Outlined.ElectricalServices,
+//                        route = "electricians",
+//                        tabIndex = 2
+//                    ),
+//                    ServiceIcon(
+//                        icon = Icons.Outlined.Home,
+//                        route = "electricians",
+//                        tabIndex = 3
+//                    )
+//                ),
+//                navController
+//            )
 //            }
 
             LazyVerticalGrid(
@@ -447,18 +451,19 @@ fun ServiceItem(
                 contentDescription = service.description,
                 modifier = Modifier
                     .fillMaxSize()
+//                    .size(250.dp)
                     .fillMaxHeight()
-//                    .size(20.dp)
                     .align(Alignment.TopStart)
 
             )
             Text(
                 text = service.title,
-                style = MaterialTheme.typography.bodyLarge,
-                lineHeight = 30.sp,
+                style = MaterialTheme.typography.headlineLarge,
+                lineHeight = 40.sp,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(top = 10.dp),
+                    .padding(top = 10.dp)
+                    .padding(start = 20.dp),
 //                color = Color.White
                 color = Color.Black
             )

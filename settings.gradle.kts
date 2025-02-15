@@ -13,6 +13,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "QuickFixx"
+rootProject.name = "Tutor"
 include(":app")
  
