@@ -1,5 +1,7 @@
 package com.example.quickfixx.repository
 
+import com.example.quickfixx.repository.Tutor.TutorRepo
+import com.example.quickfixx.repository.Tutor.TutorRepoImpl
 import com.example.quickfixx.repository.UserRepository.UserRepository
 import com.example.quickfixx.repository.UserRepository.UserRepositoryImpl
 import dagger.Binds
@@ -17,6 +19,12 @@ abstract class RepositoryModule {
     abstract fun bindElectricianApiRepo(
         electricianApiRepo :RepositoryImpl
     ): Repository
+
+    @Binds
+    @Singleton
+    abstract fun bindTutorApiRepo(
+        tutorApiRepo :TutorRepoImpl
+    ): TutorRepo
 
     @Binds
     @Singleton

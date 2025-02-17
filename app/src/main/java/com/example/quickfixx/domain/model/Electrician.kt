@@ -34,3 +34,35 @@ data class Electrician(
 //"address": "Mulund, Central Line, Home",
 //"experience": "5 years",
 //"qualification": ["Gove
+
+data class Tutor(
+    val name: String,
+    val uid: Int,
+    val contact: String,
+    val email: String,
+    val subject: String,
+    val fees: Int,
+    val rating: Float,
+    val bio: String,
+    val experience: String,
+    val availability: String,
+    val image: String
+){
+    fun convertToJson(): RequestBody {
+        val jsonObj = JSONObject()
+        jsonObj.put("name", name)
+        jsonObj.put("uid", uid)
+        jsonObj.put("contact", contact)
+        jsonObj.put("email", email)
+        jsonObj.put("subject", subject)
+        jsonObj.put("fees", fees)
+        jsonObj.put("rating", rating)
+        jsonObj.put("bio", bio)
+        jsonObj.put("experience", experience)
+        jsonObj.put("availability", availability)
+        jsonObj.put("image", image)
+
+        return jsonObj.toString().toRequestBody("application/json".toMediaTypeOrNull())
+    }
+
+}

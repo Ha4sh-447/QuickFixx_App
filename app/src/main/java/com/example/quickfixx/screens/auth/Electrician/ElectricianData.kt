@@ -102,18 +102,15 @@ fun ElectricianData(
     title:String,
     ) {
 
-    val electricianList = viewModel.state.value.data
-    val ac = viewModel.state.value.acservice
-    val tv = viewModel.state.value.tvservice
-    val cirkit = viewModel.state.value.circuitService
+    val mircroprocessors = viewModel.state.value.microprocessorsTutors
+    val ds = viewModel.state.value.dataStructuresTutors
+    val mc = viewModel.state.value.mobileComputingTutors
+    val maths = viewModel.state.value.engineeringMathsTutors
     val service = homeVM.homeState.value
     Log.d("INFO form Electrician data scree", service.title)
     val scope = rememberCoroutineScope()
 
     Log.d("INFO form electrician data, title is", title)
-
-//    val pagerState = rememberPagerState(pageCount = { ScreenTabs.entries.size }, initialPage = tabIndex)
-//    val selectedTabIndex = remember { derivedStateOf { pagerState.currentPage } }
 
     val items = listOf(
         BottomNavigationItem(
@@ -210,25 +207,6 @@ fun ElectricianData(
                     .fillMaxSize()
             ){
 
-//                TabRow(
-//                    selectedTabIndex = selectedTabIndex.value,
-//                    modifier = Modifier.fillMaxWidth()
-//                ) {
-//                    ScreenTabs.entries.forEachIndexed { index, currentTab ->
-//                        Tab(
-//                            selected = selectedTabIndex.value == index,
-//                            selectedContentColor = MaterialTheme.colorScheme.primary,
-//                            unselectedContentColor = MaterialTheme.colorScheme.outline,
-//                            onClick = {
-//                                scope.launch {
-//                                    pagerState.animateScrollToPage(currentTab.ordinal)
-//                                }
-//                            },
-//                            text = { Text(text = currentTab.text) },
-//
-//                        )
-//                    }
-//                }
                 Box(
                     modifier = Modifier.
                         height(70.dp)
@@ -244,115 +222,29 @@ fun ElectricianData(
                         )
 
                 }
-                electricianList?.let { electricians ->
-                    LazyColumn {
-                        item {
+                val tutorsList = when (title) {
+                    "Microprocessors" -> viewModel.state.value.microprocessorsTutors
+                    "Data Structures" -> viewModel.state.value.dataStructuresTutors
+                    "Mobile Computing" -> viewModel.state.value.mobileComputingTutors
+                    "Engineering Maths" -> viewModel.state.value.engineeringMathsTutors
+                    else -> emptyList() // Fallback case
+                }
 
-                        }
-                        items(items = electricians) {
-                            Log.d("Electrician-name", it.name)
-                            Log.d("Electrician-rating", it.rating.toString())
+                tutorsList?.let { tutors ->
+                    LazyColumn {
+                        items(items = tutors) {
+                            Log.d("Tutor-name", it.name)
+                            Log.d("Tutor-rating", it.rating.toString())
                             ElecCard(name = it.name, rating = it.rating, navController = navController)
                         }
                     }
                 }
 
-//                HorizontalPager(
-//                    state = pagerState,
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .weight(1f)
-//                ) {page ->
-//                    Box(
-//                        modifier = Modifier.fillMaxSize(),
-//                        contentAlignment = Alignment.Center
-//                    ) {
-//
-//                        when (page) {
-//                            0 -> {
-//                                // Render electricianList for the "All" tab
-//                                electricianList?.let { electricians ->
-//                                    LazyColumn {
-//                                        item {
-//
-//                                        }
-//                                        items(items = electricians) {
-//                                            Log.d("Electrician-name", it.name)
-//                                            Log.d("Electrician-rating", it.rating.toString())
-//                                            ElecCard(name = it.name, rating = it.rating, navController = navController)
-//                                        }
-//                                    }
-//                                }
-//                            }
-//                            1 -> {
-//                                // Render AC service data for the "AC Repair" tab
-//                                ac?.let { acService ->
-//                                    LazyColumn {
-//                                        item {
-//
-//                                        }
-//                                        items(items = acService) {
-//                                            Log.d("Electrician-name", it.name)
-//                                            Log.d("Electrician-rating", it.rating.toString())
-//                                            ElecCard(name = it.name, rating = it.rating, navController = navController)
-//                                        }
-//                                    }
-//                                }
-//                            }
-//                            2 -> {
-//                                // Render TV service data for the "TV Repair" tab
-//                                tv?.let { tvService ->
-//                                    LazyColumn {
-//                                        item {
-//
-//                                        }
-//                                        items(items = tvService) {
-//                                            Log.d("Electrician-name", it.name)
-//                                            Log.d("Electrician-rating", it.rating.toString())
-//                                            ElecCard(name = it.name, rating = it.rating, navController = navController)
-//                                        }
-//                                    }
-//                                }
-//                            }
-//                            3 -> {
-//                                // Render circuit service data for the "Circuit Fix" tab
-//                                cirkit?.let { circuitService ->
-//                                    LazyColumn {
-//                                        item {
-//
-//                                        }
-//                                        items(items = cirkit) {
-//                                            Log.d("Electrician-name", it.name)
-//                                            Log.d("Electrician-rating", it.rating.toString())
-//                                            ElecCard(name = it.name, rating = it.rating, navController = navController)
-//                                        }
-//                                    }
-//                                }
-//                            }
-//
-//                        }
                 }
-//            }
         }
     }
 }
-//}
-//enum class ScreenTabs(
-//    val text: String
-//) {
-//    All(
-//        text = "All"
-//    ),
-//    ACRepair(
-//        text = "AC Repair"
-//    ),
-//    TVRepair(
-//        text = "TV Repair"
-//    ),
-//    Circuit(
-//        text="Home Circuit"
-//    )
-//}
+
 @Composable
 fun ElecCard(name: String, rating: Float, navController: NavController) {
     Surface(

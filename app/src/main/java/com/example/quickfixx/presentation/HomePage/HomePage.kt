@@ -77,7 +77,6 @@ data class BottomNavigationItem(
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-//private lateinit var binding:ActivitySignUpBinding
 fun HomePage(
     navController: NavController,
     userData: UserData?,
@@ -91,10 +90,6 @@ fun HomePage(
     onSignOut: () -> Unit) {
 
     val user = state.user
-//    if (user != null) {
-//        HViewModel.getUser(user.email)
-//    }
-//    val userData = state.userData
 
     user?.let { Log.d("HOME PAGE USER", it.name) }
 
@@ -306,58 +301,6 @@ fun ServicesSection(services: List<Services>, navController: NavController, home
                 modifier = Modifier.padding(15.dp),
                 fontWeight = FontWeight.ExtraBold
             )
-//            RenderIcons(s
-//                list = listOf(
-//                    ServiceIcon(
-//                        icon = Icons.Rounded.AcUnit,
-//                        route = "electricians",
-//                        tabIndex = 0
-//                    ),
-//                    ServiceIcon(
-//                        icon = Icons.Outlined.Bathroom,
-//                        route = "electricians",
-//                        tabIndex = 1
-//                    ),
-//                    ServiceIcon(
-//                        icon = Icons.Outlined.ElectricalServices,
-//                        route = "electricians",
-//                        tabIndex = 2
-//                    ),
-//                    ServiceIcon(
-//                        icon = Icons.Outlined.Home,
-//                        route = "electricians",
-//                        tabIndex = 3
-//                    )
-//                ),
-//                navController
-//            )
-//
-//            RenderIcons(
-//                list = listOf(
-//                    ServiceIcon(
-//                        icon = Icons.Rounded.AcUnit,
-//                        route = "electricians",
-//                        tabIndex = 0
-//                    ),
-//                    ServiceIcon(
-//                        icon = Icons.Outlined.Bathroom,
-//                        route = "electricians",
-//                        tabIndex = 1
-//                    ),
-//                    ServiceIcon(
-//                        icon = Icons.Outlined.ElectricalServices,
-//                        route = "electricians",
-//                        tabIndex = 2
-//                    ),
-//                    ServiceIcon(
-//                        icon = Icons.Outlined.Home,
-//                        route = "electricians",
-//                        tabIndex = 3
-//                    )
-//                ),
-//                navController
-//            )
-//            }
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(1),
@@ -447,8 +390,7 @@ fun ServiceItem(
 //                navController.navigate("electricians/0")
             }
     ){
-//        val width = constraints.maxWidth
-//        val height = constraints.maxHeight
+
         Box(
             modifier = Modifier
 //                .fillMaxSize()

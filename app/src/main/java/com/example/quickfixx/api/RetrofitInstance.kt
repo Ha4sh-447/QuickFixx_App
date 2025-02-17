@@ -26,6 +26,17 @@ object RetrofitInstance {
 
     @Provides
     @Singleton
+    fun TutorsApi(): TutorsApi {
+        val retrofitBuilder = Retrofit.Builder()
+            .baseUrl(Constants.BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(TutorsApi::class.java)
+        return retrofitBuilder
+    }
+
+    @Provides
+    @Singleton
     fun userApi(): UserAPI{
         val retrofitBuilder = Retrofit.Builder()
             .baseUrl(Constants.USER_URL)

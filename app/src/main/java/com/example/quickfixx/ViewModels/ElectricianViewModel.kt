@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.quickfixx.repository.Repository
+import com.example.quickfixx.repository.Tutor.TutorRepo
 import com.example.quickfixx.screens.auth.Electrician.ElectricianScreenState
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -19,6 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ElectricianViewModel @Inject constructor(
     private val repository: Repository,
+    private val tutorRepo: TutorRepo,
     private val subject: Subject
 ): ViewModel() {
 
@@ -29,37 +31,39 @@ class ElectricianViewModel @Inject constructor(
     val title = subject.title
 
     init {
-        getAllElectrician()
+        getAllTutors()
     }
 
     fun currTitle(title: String){
         subject.currTitle(title)
     }
 
-    fun getAllElectrician() {
+    fun getAllTutors(){
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val electricians = async {
-                    repository.getAllElectrician()
+                val microprocessorsTutors = async {
+                    tutorRepo.getTutorsBySubject("microprocessors")
                 }.await()
 
-                val acrepair = async {
-                    repository.getElectricianByACService()
+                val dataStructuresTutors = async {
+                    tutorRepo.getTutorsBySubject("DS")
                 }.await()
 
-                val tvrepair = async {
-                    repository.getElectricianByTVRepair()
+                val mobileComputingTutors = async {
+                    tutorRepo.getTutorsBySubject("MC")
                 }.await()
 
-                val circuit = async{
-                    repository.getElectricianByCircuit()
+                val engineeringMathsTutors = async {
+                    tutorRepo.getTutorsBySubject("Maths")
                 }.await()
 
+                // Storing all subjects into a new field in state
                 _state.value = state.value.copy(
-                    data = electricians,
-                    acservice = acrepair,
-                    tvservice = tvrepair,
-                    circuitService = circuit
+                    microprocessorsTutors = microprocessorsTutors,
+                    dataStructuresTutors,
+                    mobileComputingTutors,
+                    engineeringMathsTutors
+
                 )
             } catch (e: Exception) {
                 Log.e("ElectricianViewModel", "Error fetching post", e)
@@ -69,5 +73,41 @@ class ElectricianViewModel @Inject constructor(
             }
         }
     }
+
+
+
+//    fun getAllElectrician() {
+//        viewModelScope.launch(Dispatchers.IO) {
+//            try {
+//                val electricians = async {
+//                    repository.getAllElectrician()
+//                }.await()
+//
+//                val acrepair = async {
+//                    repository.getElectricianByACService()
+//                }.await()
+//
+//                val tvrepair = async {
+//                    repository.getElectricianByTVRepair()
+//                }.await()
+//
+//                val circuit = async{
+//                    repository.getElectricianByCircuit()
+//                }.await()
+//
+//                _state.value = state.value.copy(
+//                    data = electricians,
+//                    acservice = acrepair,
+//                    tvservice = tvrepair,
+//                    circuitService = circuit
+//                )
+//            } catch (e: Exception) {
+//                Log.e("ElectricianViewModel", "Error fetching post", e)
+//                _state.value = state.value.copy(
+//                    errorMsg = e.message
+//                )
+//            }
+//        }
+//    }
 
 }

@@ -29,6 +29,7 @@ import com.example.quickfixx.ViewModels.ElectricianViewModel
 import com.example.quickfixx.domain.model.User
 import com.example.quickfixx.presentation.HomePage.HomeVM
 import com.example.quickfixx.presentation.Messages
+import com.example.quickfixx.presentation.UserScreen.ProfileScreen
 import com.example.quickfixx.presentation.UserScreen.UserCard
 import com.example.quickfixx.presentation.UserScreen.UserViewModel
 import com.example.quickfixx.presentation.sign_in.GoogleAuthUiClient
@@ -122,6 +123,10 @@ class MainActivity : ComponentActivity() {
                     NavHost(navController = navController, startDestination = "welcome") {
                         composable("welcome"){
                             WelcomePageScreen(navController = navController)
+                        }
+
+                        composable("edit_profile"){
+                            ProfileScreen(navController=navController)
                         }
 
 //                       composable("electricians"){
