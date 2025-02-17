@@ -6,7 +6,8 @@ data class Services(
     val title: String,
     val icon: ImageVector,
     val description: String,
-    val image: Int
+    val image: Int,
+    val index: Int
 )
 
 data class ServiceIcon(

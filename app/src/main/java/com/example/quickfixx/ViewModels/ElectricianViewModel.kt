@@ -18,16 +18,22 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ElectricianViewModel @Inject constructor(
-    private val repository: Repository
+    private val repository: Repository,
+    private val subject: Subject
 ): ViewModel() {
 
 
     private val currUser  = Firebase.auth.currentUser?.email.toString()
     private val _state = MutableStateFlow(ElectricianScreenState())
     val state = _state.asStateFlow()
+    val title = subject.title
 
     init {
         getAllElectrician()
+    }
+
+    fun currTitle(title: String){
+        subject.currTitle(title)
     }
 
     fun getAllElectrician() {

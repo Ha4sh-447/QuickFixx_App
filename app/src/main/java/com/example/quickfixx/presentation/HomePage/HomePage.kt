@@ -62,6 +62,7 @@ import com.example.quickfixx.domain.model.User
 import com.example.quickfixx.presentation.sign_in.SignInState
 import com.example.quickfixx.presentation.sign_in.SignInViewModel
 import com.example.quickfixx.presentation.sign_in.UserData
+import kotlinx.coroutines.delay
 
 data class BottomNavigationItem(
     val title: String,
@@ -81,7 +82,11 @@ fun HomePage(
     navController: NavController,
     userData: UserData?,
     HViewModel: SignInViewModel,
+    homeVM: HomeVM,
+    onTitleChange:(String) ->Unit,
     state: SignInState,
+    title: String,
+    homeState: HomePageState,
 //    user : User?,
     onSignOut: () -> Unit) {
 
@@ -240,27 +245,31 @@ fun HomePage(
                         title = "Microprocessors",
                         icon = Icons.Rounded.ElectricalServices,
                         description = "Electrician icon",
-                        image = R.drawable.img
+                        image = R.drawable.img,
+                        index = 0,
                     ),
                     Services(
                         title = "Data Structures",
                         icon = Icons.Rounded.Carpenter,
                         description = "Carpenter icon",
-                        image = R.drawable.dssa
+                        image = R.drawable.dssa,
+                        index = 1,
                     ),
                     Services(
                         title = "Mobile Computing",
                         icon = Icons.Rounded.Plumbing,
                         description = "Plumber icon",
-                        image = R.drawable.mobile_computing
+                        image = R.drawable.mobile_computing,
+                        index = 2,
                     ),
                     Services(
                         title = "Engineering Maths",
                         icon = Icons.Rounded.House,
                         description = "Housekeeping icon",
-                        image = R.drawable.maths
+                        image = R.drawable.maths,
+                        index = 3,
                     )
-                ), navController
+                ), navController, homeVM, onTitleChange
             )
             Spacer(modifier = Modifier
                 .size(20.dp)
@@ -274,8 +283,10 @@ fun HomePage(
     }
 }
 }
+@SuppressLint("StateFlowValueCalledInComposition")
 @Composable
-fun ServicesSection(services: List<Services>, navController: NavController) {
+fun ServicesSection(services: List<Services>, navController: NavController, homeVM: HomeVM, onTitleChange: (String) -> Unit,) {
+    homeVM.homeState.value.service?.let { Log.d("INFO", it.title) }
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(topStart = 15.dp, topEnd = 15.dp))
@@ -355,7 +366,7 @@ fun ServicesSection(services: List<Services>, navController: NavController) {
                 userScrollEnabled = true
             ) {
                 items(services.size) {
-                    ServiceItem(service = services[it], navController = navController)
+                    ServiceItem(homeVM, service = services[it], navController = navController, onTitleChange = onTitleChange)
                 }
             }
 
@@ -412,6 +423,8 @@ fun RenderIcons(
 
 @Composable
 fun ServiceItem(
+    homeVM: HomeVM,
+    onTitleChange: (String) -> Unit,
     service: Services,
     navController: NavController
 ){
@@ -424,7 +437,14 @@ fun ServiceItem(
 //            .background(Color.Red)
             .background(Color.White)
             .clickable {
-                navController.navigate("electricians/0")
+                Log.d("INFO from service-item", service.title)
+                homeVM.currService(service, service.title)
+                onTitleChange(service.title)
+
+//                if(homeVM.homeState.value.title!=null){
+                    navController.navigate("electricians/0")
+//                }
+//                navController.navigate("electricians/0")
             }
     ){
 //        val width = constraints.maxWidth

@@ -27,6 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.quickfixx.ViewModels.ElectricianViewModel
 import com.example.quickfixx.domain.model.User
+import com.example.quickfixx.presentation.HomePage.HomeVM
 import com.example.quickfixx.presentation.Messages
 import com.example.quickfixx.presentation.UserScreen.UserCard
 import com.example.quickfixx.presentation.UserScreen.UserViewModel
@@ -84,6 +85,7 @@ class MainActivity : ComponentActivity() {
             QuickFixxTheme {
 
                 val viewModel = hiltViewModel<SignInViewModel>()
+                val homeVM = hiltViewModel<HomeVM>()
                 var user: User? = null
 
                 // A surface container using the 'background' color from the theme
@@ -130,7 +132,9 @@ class MainActivity : ComponentActivity() {
                             val arguments = requireNotNull(backStackEntry.arguments)
                             val tabIndex = arguments.getString("tabIndex")?.toIntOrNull() ?: 0
                             val EviewModel: ElectricianViewModel = hiltViewModel()
-                            ElectricianData(navController = navController, viewModel = EviewModel, tabIndex = tabIndex)
+                            val homeVM: HomeVM = hiltViewModel()
+                            val title by homeVM.title.collectAsStateWithLifecycle()
+                            ElectricianData(navController = navController, viewModel = EviewModel, homeVM = homeVM, tabIndex = tabIndex, title=title)
                         }
                         composable("user_profile"){
 //                            ProfileScreen(onGoBack = { })
@@ -240,13 +244,19 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("home"){
-
+//                            val homeVM = hiltViewModel<HomeVM>()
+                            val homeState by homeVM.homeState.collectAsStateWithLifecycle()
+                            val title by homeVM.title.collectAsStateWithLifecycle()
                             val state by viewModel.state.collectAsStateWithLifecycle()
                             com.example.quickfixx.presentation.HomePage.HomePage(
                                 navController = navController,
                                 state = state,
                                 userData = googleAuthUiClient.getSignedInUser(),
-                                HViewModel = viewModel
+                                HViewModel = viewModel,
+                                homeVM = homeVM,
+                                onTitleChange = {newTitle -> homeVM.currTitle(newTitle)},
+                                title = title,
+                                homeState = homeState,
                             ) {
                                 lifecycleScope.launch {
                                     googleAuthUiClient.signOut()
