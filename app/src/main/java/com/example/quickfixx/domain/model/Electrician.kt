@@ -27,13 +27,6 @@ data class Electrician(
         return null
     }
 }
-///"id": 4,
-//"name": "Nigahm R",
-//"contact": 9998599985,
-//"location": "Mulund",
-//"address": "Mulund, Central Line, Home",
-//"experience": "5 years",
-//"qualification": ["Gove
 
 data class Tutor(
     val name: String,
@@ -44,7 +37,7 @@ data class Tutor(
     val fees: Int,
     val rating: Float,
     val bio: String,
-    val experience: String,
+    val experience: Int,
     val availability: String,
     val image: String
 ){

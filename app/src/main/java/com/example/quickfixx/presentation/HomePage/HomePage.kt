@@ -216,10 +216,10 @@ fun HomePage(
                         .align(Alignment.CenterStart)
                 ) {
 
-                    if (user != null) {
+                    if (userData != null) {
                         Text(
                 //                        text = "Hello " + if(user!=null) user.name else userData?.username,
-                            text = "Hello " +user.name ,
+                            text = "Hello " +userData.username ,
                             color = Color.White,
                             style = MaterialTheme.typography.headlineMedium
                         )

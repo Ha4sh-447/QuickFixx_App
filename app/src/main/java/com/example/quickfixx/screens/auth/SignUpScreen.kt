@@ -331,14 +331,6 @@ fun SignUpScreen(
                                     image = "",
                                     id = ""
                                 )
-//                                viewModel.saveUser(
-//                                    Name.value,
-//                                    gmail.value,
-//                                    password.value,
-//                                    "user",
-//                                    Contact.value,
-//                                    ""
-//                                )
                                 Log.d("SAVE USER", Name.value)
                                signUpAndSignIn(gmail.value, password.value, user)
 //                                navController.navigate("home")

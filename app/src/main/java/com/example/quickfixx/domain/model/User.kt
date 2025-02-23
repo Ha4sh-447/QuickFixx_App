@@ -12,7 +12,7 @@ data class User(
     val password : String,
     var contact : String,
     val role: String,
-    val image: String
+    var image: String
 ){
     fun convertToJson(): RequestBody {
         val jsonObj = JSONObject()

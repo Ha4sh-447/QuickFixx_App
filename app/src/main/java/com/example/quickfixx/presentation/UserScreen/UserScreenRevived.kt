@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
@@ -45,6 +46,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,7 +63,6 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -75,14 +77,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import coil.compose.rememberImagePainter
 import com.example.quickfixx.R
+import com.example.quickfixx.ViewModels.ElectricianViewModel
 import com.example.quickfixx.domain.model.User
 import com.example.quickfixx.presentation.HomePage.BottomNavigationItem
+import com.example.quickfixx.presentation.sign_in.SignInState
 import com.example.quickfixx.presentation.sign_in.SignInViewModel
 import com.example.quickfixx.presentation.sign_in.UserData
 import com.example.quickfixx.ui.theme.DeepBlue
@@ -101,6 +105,7 @@ fun UserCard(
 ){
 //    val userState by viewModel.state.collectAsState()
     val user = viewModel.state.value.user
+//    val user = userData?.let { viewModel.getUser(it.email) }
     val username = remember {
         mutableStateOf(user?.name)
     }
@@ -303,11 +308,10 @@ fun UserCard(
                         Surface(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .height(300.dp) // Adjust height as needed
+                                .height(400.dp) // Adjusted for better spacing
                                 .padding(16.dp)
                         ) {
-                            // Your input form UI here
-                            Column {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = "Edit Profile",
                                     modifier = Modifier
@@ -315,78 +319,92 @@ fun UserCard(
                                         .padding(bottom = 10.dp),
                                     style = MaterialTheme.typography.headlineLarge
                                 )
+
+                                // Profile Image Picker
+                                val imageUri = rememberSaveable { mutableStateOf(user?.image ?: "") }
+                                val painter = rememberAsyncImagePainter(
+                                    if (imageUri.value.isEmpty()) R.drawable.ic_search else imageUri.value
+                                )
+                                val launcher = rememberLauncherForActivityResult(
+                                    contract = ActivityResultContracts.GetContent()
+                                ) { uri: Uri? ->
+                                    uri?.let { imageUri.value = it.toString() }
+                                }
+
                                 Box(
+                                    contentAlignment = Alignment.Center,
                                     modifier = Modifier
-                                        .background(Silver)
+                                        .size(120.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.Gray) // Fallback background color
+                                        .clickable { launcher.launch("image/*") }
                                 ) {
-                                    Column (
+                                    Image(
+                                        painter = painter,
+                                        contentDescription = "Profile Image",
                                         modifier = Modifier
-                                            .background(Silver)
-                                    ){
+                                            .fillMaxSize() // Ensures the image takes full space
+                                            .clip(CircleShape), // Makes sure it remains circular
+                                        contentScale = ContentScale.Crop // Ensures full coverage of the circle
+                                    )
+                                }
+
+                                Text(
+                                    text = "Change Profile Picture",
+                                    modifier = Modifier.clickable { launcher.launch("image/*") },
+                                    color = Color.Blue
+                                )
+
+                                Spacer(modifier = Modifier.height(17.dp))
+
+                                // User input fields
+                                Column {
                                     username.value?.let {
                                         TextField(
-                                            value = it, // Replace with your state variable
-                                            onValueChange = { newValue ->
-                                                username.value = newValue
-                                            }, // Update your state on change
+                                            value = it,
+                                            onValueChange = { newValue -> username.value = newValue },
                                             label = { Text("Name") }
                                         )
                                     }
-                                    Spacer(
-                                        modifier = Modifier
-                                            .height(17.dp)
-                                    )
+                                    Spacer(modifier = Modifier.height(17.dp))
                                     userEmail.value?.let {
                                         TextField(
-                                            value = it, // Replace with your state variable
-                                            onValueChange = { newValue ->
-                                                userEmail.value = newValue
-                                            }, // Update your state on change
+                                            value = it,
+                                            onValueChange = { newValue -> userEmail.value = newValue },
                                             label = { Text("Email") }
                                         )
                                     }
-                                    Spacer(
-                                        modifier = Modifier
-                                            .height(17.dp)
-                                    )
+                                    Spacer(modifier = Modifier.height(17.dp))
                                     userContact.value?.let {
                                         TextField(
-                                            value = it, // Replace with your state variable
-                                            onValueChange = { newValue ->
-                                                userContact.value = newValue
-                                            }, // Update your state on change
+                                            value = it,
+                                            onValueChange = { newValue -> userContact.value = newValue },
                                             label = { Text("Contact") }
                                         )
                                     }
                                 }
-                            }
-                                Spacer(
-                                    modifier =Modifier
-                                        .height(17.dp)
-                                )
+
+                                Spacer(modifier = Modifier.height(17.dp))
+
+                                // Save Button
                                 Button(
                                     onClick = {
                                         if (user != null) {
                                             user.name = username.value.toString()
                                             user.email = userEmail.value.toString()
                                             user.contact = userContact.value.toString()
+                                            user.image = imageUri.value // Update profile image
                                         }
                                         Log.d("User-Updated", user.toString())
                                         if (user != null) {
-                                            userViewModel.updateUser(user.id,user)
+                                            userViewModel.updateUser(user.id, user)
                                         }
-                                        editProfileScreen=!editProfileScreen
-
+                                        editProfileScreen = !editProfileScreen
                                     },
-                                    modifier = Modifier
-                                        .align(Alignment.CenterHorizontally),
-//                                    colors = ButtonDefaults.buttonColors(backgroundColor = Color.Black)
+                                    modifier = Modifier.align(Alignment.CenterHorizontally),
                                     colors = ButtonDefaults.buttonColors(Color.Black)
                                 ) {
-                                    Text(
-                                        text = "Save",
-                                        color = Color.White
-                                        )
+                                    Text(text = "Save", color = Color.White)
                                 }
                             }
                         }
@@ -693,7 +711,7 @@ fun TwoCardsBelowUserCard() {
 
                     )
                 Text(
-                    text = "Service Provider",
+                    text = "Tutor",
                     textAlign = TextAlign.End
                 )
             }
@@ -703,7 +721,7 @@ fun TwoCardsBelowUserCard() {
 }
 
 @Composable
-fun ProfileScreen(navController: NavController) {
+fun ProfileScreen(navController: NavController, state: SignInState, electricianViewModel: ElectricianViewModel) {
 
     val notification = rememberSaveable { mutableStateOf("") }
     if (notification.value.isNotEmpty()) {
@@ -711,15 +729,88 @@ fun ProfileScreen(navController: NavController) {
         notification.value = ""
     }
 
-    var name by rememberSaveable { mutableStateOf("default name") }
-    var username by rememberSaveable { mutableStateOf("default username") }
-    var bio by rememberSaveable { mutableStateOf("default bio") }
+    val user = state.user
+
+    var name by rememberSaveable { mutableStateOf(user?.name ?: "Name") }
+    var username by rememberSaveable { mutableStateOf(user?.name ?: "Username") }
+    var bio by rememberSaveable { mutableStateOf( "Bio") }
+    var availability by rememberSaveable { mutableStateOf("Available Days") }
+    var fees by rememberSaveable { mutableStateOf("fees") }
+    var experience by rememberSaveable { mutableStateOf("Experience") }
+
+    Log.d("EDIT PROFILE SCREEN", electricianViewModel.title.toString())
+    Log.d("INFO PROFILE SCREEN", user?.name ?: "No user found")
+
+    val subjects = listOf("Microprocessor", "Data Structures", "Mobile Computing", "Engineering Maths")
+    var selectedSubject by rememberSaveable { mutableStateOf(subjects[0]) }
+
+    val imageUri = rememberSaveable { mutableStateOf(user?.image ?: "") }
+    val painter = rememberAsyncImagePainter(
+        if (imageUri.value.isEmpty()) R.drawable.ic_search else imageUri.value
+    )
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { imageUri.value = it.toString() }
+    }
 
     Column(
         modifier = Modifier
             .verticalScroll(rememberScrollState())
             .padding(8.dp)
+            .fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Profile Image Section
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .background(Color.Gray) // Fallback background color
+                .clickable { launcher.launch("image/*") }
+        ) {
+            Image(
+                painter = painter,
+                contentDescription = "Profile Image",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape), // Ensures it remains circular
+                contentScale = ContentScale.Crop // Ensures full coverage of the circle
+            )
+        }
+
+        Text(
+            text = "Change Profile Picture",
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .clickable { launcher.launch("image/*") },
+            color = Color.Blue
+        )
+
+        Spacer(modifier = Modifier.height(17.dp))
+
+        // Input Fields
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp)
+        ) {
+            ProfileTextField(label = "Name", value = name, onValueChange = { name = it })
+            ProfileTextField(label = "Username", value = username, onValueChange = { username = it })
+            ProfileTextField(label = "Bio", value = bio, onValueChange = { bio = it }, singleLine = false, height = 150.dp)
+
+            // Subject Dropdown
+            SubjectDropdown(selectedSubject) { selectedSubject = it }
+
+            ProfileTextField(label = "Available", value = availability, onValueChange = { availability = it })
+            ProfileTextField(label = "Experience", value = experience, onValueChange = { experience = it })
+            ProfileTextField(label = "Fees", value = fees, onValueChange = { fees = it })
+        }
+
+        Divider(thickness = 20.dp, modifier = Modifier.padding(vertical = 10.dp))
+
+        // Cancel & Save Buttons
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -727,72 +818,94 @@ fun ProfileScreen(navController: NavController) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(text = "Cancel",
-                modifier = Modifier.clickable { notification.value = "Cancelled" })
+                modifier = Modifier.clickable {
+                    notification.value = "Cancelled"
+                    navController.popBackStack()
+                })
+
             Text(text = "Save",
-                modifier = Modifier.clickable { notification.value = "Profile updated" })
-        }
-
-        ProfileImage()
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 4.dp, end = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "Name", modifier = Modifier.width(100.dp))
-            TextField(
-                value = name,
-                onValueChange = { name = it },
-//                colors = TextField(),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Gray,
-                    focusedTextColor = Color.Black
-                )
-            )
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 4.dp, end = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "Username", modifier = Modifier.width(100.dp))
-            TextField(
-                value = username,
-                onValueChange = { username = it },
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Gray,
-                    focusedTextColor = Color.Black
-                )
-            )
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            Text(
-                text = "Bio", modifier = Modifier
-                    .width(100.dp)
-                    .padding(top = 8.dp)
-            )
-            TextField(
-                value = bio,
-                onValueChange = { bio = it },
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Gray,
-                    focusedTextColor = Color.Black
-                ),
-                singleLine = false,
-                modifier = Modifier.height(150.dp)
-            )
+                modifier = Modifier.clickable {
+                    notification.value = "Profile updated"
+                    navController.popBackStack()
+                    if (user != null) {
+                        Log.d("INFO FROM EDIT PROFILE", name)
+                        electricianViewModel.saveTutor(
+                            name,
+                            user.id.toIntOrNull() ?: 0,
+                            user.contact,
+                            user.email,
+                            subject = electricianViewModel.title.toString(),
+                            fees.toIntOrNull() ?: 0,
+                            bio,
+                            experience.toIntOrNull() ?: 0,
+                            availability,
+                            image = imageUri.value // Save updated image
+                        )
+                    }
+                })
         }
     }
 }
+
+// Helper function for TextFields
+@Composable
+fun ProfileTextField(label: String, value: String, onValueChange: (String) -> Unit, singleLine: Boolean = true, height: Dp = 56.dp) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        Text(text = label, modifier = Modifier.fillMaxWidth())
+        TextField(
+            value = value,
+            onValueChange = onValueChange,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Gray,
+                focusedTextColor = Color.Black
+            ),
+            singleLine = singleLine,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(height)
+        )
+    }
+}
+
+// Dropdown menu for subjects
+@Composable
+fun SubjectDropdown(selectedSubject: String, onSubjectSelected: (String) -> Unit) {
+    val subjects = listOf("Microprocessor", "Data Structures", "Mobile Computing", "Engineering Maths")
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+    ) {
+        Text(text = "Subject", modifier = Modifier.width(100.dp))
+        Box(modifier = Modifier
+            .clickable { expanded = true }
+            .background(Color.Gray)
+            .padding(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(selectedSubject, modifier = Modifier.padding(8.dp))
+                Icon(Icons.Default.ArrowDropDown, contentDescription = "Dropdown arrow")
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                subjects.forEach { subject ->
+                    DropdownMenuItem(
+                        text = { Text(subject) },
+                        onClick = {
+                            onSubjectSelected(subject)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 fun ProfileImage() {

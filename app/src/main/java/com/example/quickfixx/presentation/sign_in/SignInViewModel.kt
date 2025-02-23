@@ -7,6 +7,7 @@ import com.example.quickfixx.domain.model.User
 import com.example.quickfixx.repository.UserRepository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -31,25 +32,28 @@ class SignInViewModel @Inject constructor(
 
     suspend fun getUserByEmail(email: String): User? {
         return try {
-            val user:User?
-            user = repo.getByEmail(email)
-            if (user != null) {
-                Log.d("user", user.name)
+            var user = repo.getByEmail(email)
+
+            // If user is null, wait a bit and retry (fixes race condition)
+            if (user == null) {
+                delay(500) // Wait 500ms before retrying
+                user = repo.getByEmail(email)
             }
-            _state.update {
-                it.copy(
-                    user= user
-                )
+
+            user?.let {
+                Log.d("user", it.name)
+                _state.update { currentState -> currentState.copy(user = it) }
             }
             user
         } catch (e: HttpException) {
             if (e.code() == 500) {
-                null // User not found
+                null // Return null if user is not found
             } else {
                 throw e // Re-throw the exception for other HTTP errors
             }
         }
     }
+
 
     fun getUser(email : String){
         viewModelScope.launch {
@@ -82,6 +86,7 @@ class SignInViewModel @Inject constructor(
               user = userBody
           )
       }
+      Log.d("INFO FROM SAVE USER", "User state updated")
     }
 
     fun resetState() {

@@ -39,12 +39,11 @@ import com.example.quickfixx.screens.auth.ProviderDetails
 import com.example.quickfixx.screens.auth.SignUpScreen
 import com.example.quickfixx.screens.auth.WelcomePageScreen
 import com.example.quickfixx.ui.theme.QuickFixxTheme
-import com.google.ai.client.generativeai.BuildConfig
-import com.google.ai.client.generativeai.GenerativeModel
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.tasks.Task
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -95,44 +94,50 @@ class MainActivity : ComponentActivity() {
 
                 ) {
                     val navController = rememberNavController()
+
                     LaunchedEffect(key1 = Unit) {
                         val authUser = googleAuthUiClient.getSignedInUser()
-                        authUser?.email?.let { Log.d("AUTH USER", it) }
-                        if (authUser!=null){
+
+                        if (authUser != null) {
                             Log.d("STEP", authUser.email)
-                            user = viewModel.getUserByEmail(authUser.email)
-                            Log.d("STEP", "---------------------")
-                            if (user ==null){
+
+                            // Fetch user from database (with retry)
+                            var user = viewModel.getUserByEmail(authUser.email)
+
+                            if (user == null) {
+                                // Instead of navigating immediately, wait & retry
+                                delay(1000) // Wait for the user to be added to DB
+                                user = viewModel.getUserByEmail(authUser.email)
+                            }
+
+                            if (user == null) {
+                                // If user is still not found, go to sign up
                                 navController.navigate("sign_up")
-                                Toast.makeText(
-                                    applicationContext,
-                                    "Sign in to continue",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }else{
-                                navController.navigate("home"){
+                                Toast.makeText(applicationContext, "Sign in to continue", Toast.LENGTH_LONG).show()
+                            } else {
+                                // If user exists, go to home
+                                navController.navigate("home") {
                                     popUpTo(0)
                                 }
                             }
-                        }else{
-                            navController.navigate("sign_up"){
+                        } else {
+                            navController.navigate("sign_up") {
                                 popUpTo(0)
                             }
                         }
                     }
+
                     NavHost(navController = navController, startDestination = "welcome") {
                         composable("welcome"){
                             WelcomePageScreen(navController = navController)
                         }
 
                         composable("edit_profile"){
-                            ProfileScreen(navController=navController)
+                            val electricianViewModel: ElectricianViewModel = hiltViewModel()
+                            val state by viewModel.state.collectAsStateWithLifecycle()
+                            ProfileScreen(navController=navController, state = state, electricianViewModel = electricianViewModel)
                         }
 
-//                       composable("electricians"){
-//                           val EviewModel : ElectricianViewModel= hiltViewModel()
-//                           ElectricianData(navController = navController, EviewModel)
-//                       }
                         composable("electricians/{tabIndex}") { backStackEntry ->
                             val arguments = requireNotNull(backStackEntry.arguments)
                             val tabIndex = arguments.getString("tabIndex")?.toIntOrNull() ?: 0
@@ -200,33 +205,53 @@ class MainActivity : ComponentActivity() {
                             )
 
                             LaunchedEffect(key1 = state.isSignInSuccessful) {
-                                if(state.isSignInSuccessful) {
-                                    state.userData?.username?.let { it1 ->
-                                        Log.d("SINGIN SUCC",
-                                            it1
-                                        )
-                                    }
+                                if (state.isSignInSuccessful) {
                                     val signedInUser = googleAuthUiClient.getSignedInUser()
-//                                    Log.d("SIGNED IN USER", signedInUser.username)
+
                                     if (signedInUser != null) {
-                                         user = viewModel.repo.getByEmail(signedInUser.email)
-                                        viewModel.getUser(signedInUser.email)
-                                        if (user != null) {
-                                            Log.d("AFTER SIGNED IN USER", user!!.name)
-                                            state.user = user // Update the user in the state
-                                            Toast.makeText(
-                                                applicationContext,
-                                                "Sign in successful",
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                            navController.navigate("home") {
-                                                popUpTo(0)
+                                        launch {
+                                            var user = viewModel.getUserByEmail(signedInUser.email)
+
+                                            if (user == null) {
+                                                val newUser = User(
+                                                    id = "", // Auto-generated ID
+                                                    name = signedInUser.username ?: "Unknown",
+                                                    email = signedInUser.email,
+                                                    contact = "",
+                                                    image = signedInUser.profilePictureUrl ?: "",
+                                                    role = "User",
+                                                    password = "123456",
+                                                )
+
+                                                viewModel.saveUser(
+                                                    name = newUser.name,
+                                                    email = newUser.email,
+                                                    contact = newUser.contact,
+                                                    image = newUser.image,
+                                                    role = newUser.role,
+                                                    password = newUser.password
+                                                )
+
+                                                delay(500) // Ensure database has time to process the new user
+
+                                                user = viewModel.getUserByEmail(signedInUser.email) // Retry fetching
                                             }
-                                            viewModel.resetState()
+
+                                            if (user != null) {
+                                                state.user = user
+                                                Toast.makeText(applicationContext, "Sign in successful", Toast.LENGTH_LONG).show()
+
+                                                navController.navigate("home") {
+                                                    popUpTo(0)
+                                                }
+
+//                                                viewModel.resetState()
+                                            }
                                         }
                                     }
                                 }
                             }
+
                             SignUpScreen(
                                 state,
                                 navController = navController,

@@ -8,5 +8,6 @@ data class ElectricianScreenState(
     val dataStructuresTutors: List<Tutor>? = null,
     val mobileComputingTutors: List<Tutor>? = null,
     val engineeringMathsTutors: List<Tutor>? = null,
-    val errorMsg: String?= null
+    val errorMsg: String?= null,
+    val tutor: Tutor?= null
 )
