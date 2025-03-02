@@ -11,4 +11,5 @@ interface TutorRepo {
     suspend fun getTutorsBySubject(subject: String): List<Tutor>?
     suspend fun saveAsTutor(@Body tutorBody: RequestBody)
     suspend fun updateTutorProfile(@Path("id") tutorid: String, @Body tutorBody: RequestBody)
+    suspend fun getTutorById(@Path("id") tutorid: String): Tutor?
 }

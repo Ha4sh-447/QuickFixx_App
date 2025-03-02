@@ -86,6 +86,7 @@ class MainActivity : ComponentActivity() {
 
                 val viewModel = hiltViewModel<SignInViewModel>()
                 val homeVM = hiltViewModel<HomeVM>()
+                val eVM = hiltViewModel<ElectricianViewModel>()
                 var user: User? = null
 
                 // A surface container using the 'background' color from the theme
@@ -133,18 +134,18 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("edit_profile"){
-                            val electricianViewModel: ElectricianViewModel = hiltViewModel()
+//                            val electricianViewModel: ElectricianViewModel = hiltViewModel()
                             val state by viewModel.state.collectAsStateWithLifecycle()
-                            ProfileScreen(navController=navController, state = state, electricianViewModel = electricianViewModel)
+                            ProfileScreen(navController=navController, state = state, electricianViewModel = eVM)
                         }
 
                         composable("electricians/{tabIndex}") { backStackEntry ->
                             val arguments = requireNotNull(backStackEntry.arguments)
                             val tabIndex = arguments.getString("tabIndex")?.toIntOrNull() ?: 0
-                            val EviewModel: ElectricianViewModel = hiltViewModel()
+//                            val EviewModel: ElectricianViewModel = hiltViewModel()
                             val homeVM: HomeVM = hiltViewModel()
                             val title by homeVM.title.collectAsStateWithLifecycle()
-                            ElectricianData(navController = navController, viewModel = EviewModel, homeVM = homeVM, tabIndex = tabIndex, title=title)
+                            ElectricianData(navController = navController, viewModel = eVM, homeVM = homeVM, tabIndex = tabIndex, title=title)
                         }
                         composable("user_profile"){
 //                            ProfileScreen(onGoBack = { })
@@ -176,17 +177,28 @@ class MainActivity : ComponentActivity() {
                         composable("messages"){
                             Messages(navController = navController)
                         }
-                        composable("profile"){
-                            ProviderDetails(navController = navController,
+
+                        composable("profile") {
+                            val homeVM: HomeVM = hiltViewModel()
+                            val title by homeVM.title.collectAsStateWithLifecycle()
+
+//                            val EviewModel: ElectricianViewModel = hiltViewModel()
+                            val tutor by eVM.state.collectAsStateWithLifecycle()
+
+                            ProviderDetails(
+                                navController = navController,
+                                tutor = tutor,
+                                evm = eVM,
                                 onBook = {
                                     Toast.makeText(
                                         applicationContext,
                                         "Booking in process",
                                         Toast.LENGTH_LONG
                                     ).show()
-
-                                })
+                                }
+                            )
                         }
+
                         composable("sign_up"){
                             val state by viewModel.state.collectAsStateWithLifecycle()
                             val launcher = rememberLauncherForActivityResult(

@@ -35,4 +35,6 @@ interface TutorsApi{
     suspend fun getBySubject(@Query("subject") subject: String) : Response<List<Tutor>>
     @PUT("tutors/{id}")
     suspend fun updateTutorProfile(@Path("id") tutorId: String, @Body tutor: RequestBody)
+    @GET("tutors/{id}")
+    suspend fun getTutorById(@Path("id") tutorId: String): Tutor?
 }

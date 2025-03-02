@@ -48,13 +48,16 @@ fun WelcomePageScreen(
         ) {
 
              Spacer(modifier = Modifier.height(150.dp))
-            Image(
-                painter = painterResource(id = R.drawable.qf_app_logo),
-                contentDescription = "app logo",
-                modifier = Modifier
-                    .size(250.dp)
+//            Image(
+//                painter = painterResource(id = R.drawable.qf_app_logo),
+//                contentDescription = "app logo",
+//                modifier = Modifier
+//                    .size(250.dp)
+//            )
+            Text(
+                text = "TUTOR",
+                style = MaterialTheme.typography.headlineLarge
             )
-
             Text(
                 text = "Welcome to Tutor",
                 color = MaterialTheme.colorScheme.primary,

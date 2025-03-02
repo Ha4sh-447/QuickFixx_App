@@ -3,12 +3,15 @@
 package com.example.quickfixx.screens.auth
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Color.BLACK
+import android.graphics.Color.WHITE
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,25 +23,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,7 +48,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -61,24 +57,61 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import android.net.Uri
+import android.widget.Toast
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.asImageBitmap
 
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.core.content.FileProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.quickfixx.R
 import com.example.quickfixx.R.drawable.baseline_star_outline_24
+import com.example.quickfixx.ViewModels.ElectricianViewModel
+import com.example.quickfixx.domain.model.Tutor
 import com.example.quickfixx.navigation.Screens
+import com.example.quickfixx.screens.auth.Electrician.ElectricianScreenState
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.qrcode.QRCodeWriter
+import java.io.File
+import java.io.FileOutputStream
+import android.content.pm.PackageManager
+import android.location.Geocoder
+import androidx.compose.runtime.LaunchedEffect
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationServices
+import java.text.SimpleDateFormat
+import java.util.*
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProviderDetails(navController: NavController,
+                    tutor: ElectricianScreenState,
+                    evm: ElectricianViewModel,
                     onBook : ()->Unit) {
 
+    val selectedTutor = evm.state.collectAsStateWithLifecycle().value.tutor
+    if (selectedTutor != null) {
+        Log.d("INFO", "PROVIDER DETAILS"+selectedTutor.name)
+    }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.background
@@ -112,7 +145,6 @@ fun ProviderDetails(navController: NavController,
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
-
                 Text(text = "Profile",
                     Modifier
                         .padding(top = 5.dp, bottom = 9.dp, start = 9.dp)
@@ -124,8 +156,12 @@ fun ProviderDetails(navController: NavController,
                     textAlign = TextAlign.Left,
                     textDecoration = TextDecoration.Underline
                 )
-                CardElevation1("Mukesh", 4, navController, onBook)
-                Summary("Mukesh", 4, 4000, 300, 2, true, navController)
+                if (selectedTutor != null) {
+                    CardElevation1(selectedTutor.name, selectedTutor.rating, selectedTutor, navController, onBook)
+                }
+                if (selectedTutor != null) {
+                    Summary(selectedTutor.name, selectedTutor.rating, selectedTutor.contact, selectedTutor.fees, selectedTutor.experience, true, navController)
+                }
                 ReviewsSection(
                     reviews = listOf(
                         Review(username = "Sarang", rating = 5, comment = "Great service!"),
@@ -142,9 +178,9 @@ fun ProviderDetails(navController: NavController,
 @Composable
 fun Summary(
     name: String,
-    rating: Int,
-    likes: Int,
-    reviews: Int,
+    rating: Float,
+    contact: String,
+    fees: Int,
     yearsOfExperience: Int,
     verified: Boolean,
     navController: NavController
@@ -228,8 +264,8 @@ fun Summary(
                             Column(
                                 modifier = Modifier.padding(start = 16.dp)
                             ) {
-                                SummaryItem(Icons.Default.ThumbUp,"Likes: $likes")
-                                SummaryItem(Icons.Default.RateReview,"Reviews: $reviews")
+                                SummaryItem(Icons.Default.ThumbUp,"Fees: $fees")
+                                SummaryItem(Icons.Default.RateReview,"Rating: $rating")
                                 SummaryItem(Icons.Default.Timer,"Experience: $yearsOfExperience years")
                                 SummaryItem(Icons.Default.ThumbUp,"Verification: ${if (verified) "Verified" else "Not Verified"}")
                             }
@@ -263,7 +299,7 @@ fun SummaryItem(icon: ImageVector, text: String) {
 }
 
 @Composable
-fun CardElevation1(name: String, rating: Int, navController: NavController, onBook: () -> Unit) {
+fun CardElevation1(name: String, rating: Float, tutor: Tutor, navController: NavController, onBook: () -> Unit) {
     val context = LocalContext.current
     Surface(
         shape = RoundedCornerShape(16.dp),
@@ -287,10 +323,12 @@ fun CardElevation1(name: String, rating: Int, navController: NavController, onBo
                     modifier = Modifier
                         .size(width = 100.dp, height = 140.dp)
                 ) {
+                    val imageUrl = tutor.image ?: "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?q=80&w=1965&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                     Image(
-                        painter = painterResource(id = R.drawable.qf_app_logo),
+                        painter = rememberAsyncImagePainter(imageUrl),
                         contentScale = ContentScale.Crop,
                         contentDescription = null,
+                        modifier = Modifier.size(128.dp)
                     )
                 }
                 Column(
@@ -402,28 +440,10 @@ fun CardElevation1(name: String, rating: Int, navController: NavController, onBo
                                 horizontalArrangement = Arrangement.spacedBy(20.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                OutlinedButton(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(40.dp),
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        contentColor = Color.Black,
-                                        containerColor = Color.White
-                                    ),
-                                    onClick = {
-                                        onBook()
-                                        navController.navigate("profile")
-                                    }
-                                ) {
-                                    Text(
-                                        text = "Book",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        style = MaterialTheme.typography.titleLarge
-                                    )
-                                }
+                                // Book button with QR code functionality
+                                BookButtonWithQR(navController, tutor=tutor, onBook = onBook)
 
+                                // Call button
                                 OutlinedButton(
                                     modifier = Modifier
                                         .weight(1f)
@@ -434,7 +454,11 @@ fun CardElevation1(name: String, rating: Int, navController: NavController, onBo
                                         contentColor = Color.Blue,
                                         containerColor = Color.White,
                                     ),
-                                    onClick = { /*TODO*/ }
+                                    onClick = {
+                                        val phoneNumber = "7045432201"
+                                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phoneNumber"))
+                                        context.startActivity(intent)
+                                    }
                                 ) {
                                     Text(
                                         text = "Call",
@@ -443,57 +467,6 @@ fun CardElevation1(name: String, rating: Int, navController: NavController, onBo
                                         style = MaterialTheme.typography.titleLarge
                                     )
                                 }
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(20.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        OutlinedButton(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(40.dp),
-                                            shape = RoundedCornerShape(8.dp),
-                                            colors = ButtonDefaults.buttonColors(
-                                                contentColor = Color.Black,
-                                                containerColor = Color.White
-                                            ),
-                                            onClick = { onBook() }
-                                        ) {
-                                            Text(
-                                                text = "Book",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                style = MaterialTheme.typography.titleLarge
-                                            )
-                                        }
-
-                                        OutlinedButton(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(40.dp),
-                                            shape = RoundedCornerShape(8.dp),
-                                            border = BorderStroke(1.dp, Color.Blue),
-                                            colors = ButtonDefaults.buttonColors(
-                                                contentColor = Color.Blue,
-                                                containerColor = Color.White,
-                                            ),
-                                            onClick = {
-                        
-                                                val phoneNumber = "7045432201" 
-                                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phoneNumber"))
-                                                context.startActivity(intent)
-                                            }
-                                        ) {
-                                            Text(
-                                                text = "Call",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                style = MaterialTheme.typography.titleLarge
-                                            )
-                                        }
-                                    }
-                                }
-
                             }
                         }
                     }
@@ -501,7 +474,7 @@ fun CardElevation1(name: String, rating: Int, navController: NavController, onBo
             }
         }
     }
-
+}
 @Composable
 fun ReviewCard(username: String, rating: Int, comment: String) {
     Card(
@@ -585,3 +558,354 @@ fun ReviewsSection(reviews: List<Review>) {
 
 data class Review(val username: String, val rating: Int, val comment: String)
 
+@Composable
+fun BookButtonWithQR(
+    navController: NavController,
+    onBook: () -> Unit,
+    tutor: Tutor  // Only keep tutor parameter to access all details
+) {
+    var showQRCode by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    // Generate a unique booking reference
+    val bookingReference = remember {
+        // Simple implementation - in production use UUID or another robust method
+        "BK-" + System.currentTimeMillis().toString().takeLast(8)
+    }
+
+    // Get current datetime formatted nicely
+    val currentDateTime = remember {
+        val formatter = SimpleDateFormat("MMMM d, yyyy - h:mm a", Locale.getDefault())
+        formatter.format(Date())
+    }
+
+    // State for location
+    var locationText by remember { mutableStateOf("Fetching location...") }
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+
+    // Get current location
+    LaunchedEffect(Unit) {
+        val locationPermission = android.Manifest.permission.ACCESS_FINE_LOCATION
+        val hasPermission = ContextCompat.checkSelfPermission(context, locationPermission) ==
+                PackageManager.PERMISSION_GRANTED
+
+        if (hasPermission) {
+            try {
+                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                    if (location != null) {
+                        // Use Geocoder to get address from coordinates
+                        val geocoder = Geocoder(context, Locale.getDefault())
+                        try {
+                            val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                            if (addresses != null && addresses.isNotEmpty()) {
+                                val address = addresses[0]
+                                locationText = address.getAddressLine(0) ?:
+                                        "${location.latitude}, ${location.longitude}"
+                            } else {
+                                locationText = "${location.latitude}, ${location.longitude}"
+                            }
+                        } catch (e: Exception) {
+                            locationText = "${location.latitude}, ${location.longitude}"
+                        }
+                    } else {
+                        locationText = "Location unavailable"
+                    }
+                }
+            } catch (e: Exception) {
+                locationText = "Error accessing location"
+            }
+        } else {
+            locationText = "Location permission not granted"
+        }
+    }
+
+    // Get subject from tutor object
+    val subject = tutor.subject?.firstOrNull() ?: "General Tutoring"
+
+    // Compile all booking information
+    val bookingInfo = """
+        TUTOR BOOKING CONFIRMATION
+        -------------------------
+        Tutor: ${tutor.name}
+        Subject: $subject
+        Date & Time: $currentDateTime
+        Location: $locationText
+        -------------------------
+        Booking Ref: $bookingReference
+        Contact: ${tutor.contact ?: "N/A"}
+        Student: ${context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE).getString("user_name", "Student") ?: "Student"}
+    """.trimIndent()
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(20.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        OutlinedButton(
+            modifier = Modifier
+                .weight(1f)
+                .height(40.dp),
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(
+                contentColor = Color.Black,
+                containerColor = Color.White
+            ),
+            onClick = {
+                onBook()
+                showQRCode = true
+                // Navigation happens after QR is closed
+            }
+        ) {
+            Text(
+                text = "Book",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
+    }
+
+    if (showQRCode) {
+        QRCodeDialog(
+            qrContent = bookingInfo,
+            bookingReference = bookingReference,
+            tutorName = tutor.name,
+            subject = subject.toString(),
+            dateTime = currentDateTime,
+            location = locationText,
+            onDismiss = {
+                showQRCode = false
+                navController.navigate("profile")
+            },
+            onShare = { bitmap ->
+                shareQRCode(context, bitmap, "Booking Confirmation: $bookingReference")
+            }
+        )
+    }
+}
+@Composable
+fun QRCodeDialog(
+    qrContent: String,
+    bookingReference: String,
+    tutorName: String,
+    subject: String,
+    dateTime: String,
+    location: String,
+    onDismiss: () -> Unit,
+    onShare: (Bitmap) -> Unit
+) {
+    val qrBitmap = remember(qrContent) {
+        generateQRCode(content = qrContent, size = 800)
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Booking Confirmation",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Divider(
+                    color = Color.LightGray,
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+
+                // Booking details
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = "Booking Reference: $bookingReference",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    DetailRow(icon = Icons.Default.Person, label = "Tutor", value = tutorName)
+                    DetailRow(icon = Icons.Default.Book, label = "Subject", value = subject)
+                    DetailRow(icon = Icons.Default.DateRange, label = "Date & Time", value = dateTime)
+                    DetailRow(icon = Icons.Default.LocationOn, label = "Location", value = location)
+                }
+
+                Divider(
+                    color = Color.LightGray,
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+
+                qrBitmap?.let { bitmap ->
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "QR Code",
+                        modifier = Modifier
+                            .size(240.dp)
+                            .background(Color.White)
+                            .padding(8.dp)
+                    )
+
+                    Text(
+                        text = "Show this QR code to your tutor",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text("Close")
+                    }
+
+                    Button(
+                        onClick = { qrBitmap?.let { onShare(it) } },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Share",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text("Share")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DetailRow(icon: ImageVector, label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.Gray,
+            modifier = Modifier.size(20.dp)
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Column {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
+            )
+
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+
+fun generateQRCode(content: String, size: Int): Bitmap? {
+    try {
+        val hints = hashMapOf<EncodeHintType, Any>()
+        hints[EncodeHintType.MARGIN] = 1 // Make quiet zone smaller
+
+        val qrCodeWriter = QRCodeWriter()
+        val bitMatrix = qrCodeWriter.encode(
+            content,
+            BarcodeFormat.QR_CODE,
+            size,
+            size,
+            hints
+        )
+
+        val width = bitMatrix.width
+        val height = bitMatrix.height
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+        for (x in 0 until width) {
+            for (y in 0 until height) {
+                bitmap.setPixel(x, y, if (bitMatrix[x, y]) BLACK else WHITE)
+            }
+        }
+
+        return bitmap
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return null
+    }
+}
+
+private fun shareQRCode(context: android.content.Context, bitmap: Bitmap, title: String) {
+    try {
+        // Save bitmap to cache directory
+        val cachePath = File(context.cacheDir, "images")
+        cachePath.mkdirs()
+        val file = File(cachePath, "booking_qr.png")
+
+        FileOutputStream(file).use { stream ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            stream.flush()
+        }
+
+        // Get URI via FileProvider
+        val contentUri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+
+        // Create share intent
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_STREAM, contentUri)
+            putExtra(Intent.EXTRA_SUBJECT, title)
+            putExtra(Intent.EXTRA_TEXT, "Here's my tutor booking confirmation.")
+            type = "image/png"
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        // Launch share dialog
+        context.startActivity(Intent.createChooser(shareIntent, "Share Booking Confirmation"))
+    } catch (e: Exception) {
+        e.printStackTrace()
+        Toast.makeText(context, "Error sharing QR code: ${e.message}", Toast.LENGTH_SHORT).show()
+    }
+}

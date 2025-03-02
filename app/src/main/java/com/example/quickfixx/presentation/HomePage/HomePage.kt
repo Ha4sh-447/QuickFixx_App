@@ -205,7 +205,7 @@ fun HomePage(
                     .padding(top = 10.dp)
                     .padding(30.dp)
 //                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color.Red)
+//                    .background(Color.Red)
                     .height(100.dp)
                     .fillMaxSize()
             ) {

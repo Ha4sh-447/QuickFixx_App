@@ -8,6 +8,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -83,6 +84,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.quickfixx.R
 import com.example.quickfixx.R.drawable.baseline_star_outline_24
 import com.example.quickfixx.ViewModels.ElectricianViewModel
+import com.example.quickfixx.domain.model.Tutor
 import com.example.quickfixx.navigation.Screens
 import com.example.quickfixx.presentation.HomePage.BottomNavigationItem
 import com.example.quickfixx.presentation.HomePage.HomeVM
@@ -210,7 +212,7 @@ fun ElectricianData(
                 Box(
                     modifier = Modifier.
                         height(70.dp)
-                        .background(Color.Red)
+//                        .background(Color.Red)
                         .fillMaxWidth()
                         .padding(top = 15.dp, start = 20.dp, bottom = 15.dp, end = 20.dp)
                 ){
@@ -235,7 +237,7 @@ fun ElectricianData(
                         items(items = tutors) {
                             Log.d("Tutor-name", it.name)
                             Log.d("Tutor-rating", it.rating.toString())
-                            ElecCard(name = it.name, rating = it.rating, navController = navController)
+                            ElecCard(name = it.name, rating = it.rating,tutor = it, navController = navController, viewModel)
                         }
                     }
                 }
@@ -246,7 +248,13 @@ fun ElectricianData(
 }
 
 @Composable
-fun ElecCard(name: String, rating: Float, navController: NavController) {
+fun ElecCard(
+    name: String,
+    rating: Float,
+    tutor: Tutor,
+    navController: NavController,
+    electricianViewModel: ElectricianViewModel
+) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = Color(0xFFDAE1E7),
@@ -260,20 +268,23 @@ fun ElecCard(name: String, rating: Float, navController: NavController) {
         Column(
             verticalArrangement = Arrangement.Center
         ) {
-
-
             Row(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .clickable {
+                        // Save tutor to state and navigate to profile
+//                        electricianViewModel.updateSelectedTutor(tutor)
+//                        navController.navigate("profile")
+                    },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .size(width = 100.dp, height = 140.dp)
-
+                    modifier = Modifier.size(width = 100.dp, height = 140.dp)
                 ) {
+                    val imageUrl = tutor.image ?: "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?q=80&w=1965&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                     Image(
-                        painter = rememberAsyncImagePainter("https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?q=80&w=1965&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"),
+                        painter = rememberAsyncImagePainter(imageUrl),
                         contentDescription = null,
                         modifier = Modifier.size(128.dp)
                     )
@@ -281,8 +292,7 @@ fun ElecCard(name: String, rating: Float, navController: NavController) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .weight(2f),
-//                verticalArrangement = Arrangement.Center
+                        .weight(2f)
                 ) {
                     Surface(
                         shape = RoundedCornerShape(24.dp),
@@ -293,9 +303,7 @@ fun ElecCard(name: String, rating: Float, navController: NavController) {
                             .padding(start = 16.dp),
                         color = Color(0xFFD1D5E1)
                     ) {
-                        Column(
-//                            Modifier.padding(horizontal = 4.dp)
-                        ){
+                        Column {
                             Text(
                                 text = name,
                                 fontSize = 24.sp,
@@ -303,10 +311,7 @@ fun ElecCard(name: String, rating: Float, navController: NavController) {
                                 fontWeight = FontWeight.SemiBold,
                                 modifier = Modifier.padding(10.dp)
                             )
-
                             Spacer(modifier = Modifier.height(2.dp))
-
-
                             AssistChip(
                                 modifier = Modifier.padding(start = 16.dp),
                                 onClick = { Log.d("Assist chip", "hello world") },
@@ -319,26 +324,17 @@ fun ElecCard(name: String, rating: Float, navController: NavController) {
                                     )
                                 }
                             )
-
-
                             Spacer(modifier = Modifier.height(2.dp))
-
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = buildAnnotatedString {
-
-                                        if (rating >= 4) {
-                                            withStyle(style = SpanStyle(color = Color.Black)) {
-                                                append("Excellent: $rating")
-                                            }
-                                        } else if (rating > 3) {
-                                            withStyle(style = SpanStyle(color = Color.Black)) {
-                                                append("Good: $rating")
-                                            }
-                                        } else {
-                                            withStyle(style = SpanStyle(color = Color.Black)) {
-                                                append("Average: $rating")
-                                            }
+                                        val ratingText = when {
+                                            rating >= 4 -> "Excellent: $rating"
+                                            rating > 3 -> "Good: $rating"
+                                            else -> "Average: $rating"
+                                        }
+                                        withStyle(style = SpanStyle(color = Color.Black)) {
+                                            append(ratingText)
                                         }
                                     },
                                     fontSize = 14.sp,
@@ -347,9 +343,7 @@ fun ElecCard(name: String, rating: Float, navController: NavController) {
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 repeat(5) { index ->
-                                    val starColor =
-                                        if (index < rating) Color(0xFFF6B266) else Color.Gray
-
+                                    val starColor = if (index < rating) Color(0xFFF6B266) else Color.Gray
                                     Icon(
                                         painter = painterResource(id = baseline_star_outline_24),
                                         tint = starColor,
@@ -357,9 +351,7 @@ fun ElecCard(name: String, rating: Float, navController: NavController) {
                                     )
                                 }
                             }
-
                             Spacer(modifier = Modifier.height(4.dp))
-
                             OutlinedButton(
                                 modifier = Modifier.padding(start = 56.dp),
                                 shape = RoundedCornerShape(8.dp),
@@ -367,8 +359,12 @@ fun ElecCard(name: String, rating: Float, navController: NavController) {
                                     contentColor = Color.Black,
                                     containerColor = Color.White
                                 ),
+//                                onClick = {
                                 onClick = {
+                                    electricianViewModel.updateSelectedTutor(tutor)
+                                    Log.d("INFO", "Tutor saved: ${tutor.name}")
                                     navController.navigate("profile")
+//    }
                                 }
                             ) {
                                 Text(
@@ -378,7 +374,6 @@ fun ElecCard(name: String, rating: Float, navController: NavController) {
                                     style = MaterialTheme.typography.titleLarge
                                 )
                             }
-
                             Spacer(modifier = Modifier.width(20.dp))
                             OutlinedButton(
                                 modifier = Modifier.padding(start = 66.dp),
@@ -399,11 +394,10 @@ fun ElecCard(name: String, rating: Float, navController: NavController) {
                             }
                         }
                     }
-
                 }
                 Spacer(modifier = Modifier.width(20.dp))
             }
-
         }
     }
 }
+

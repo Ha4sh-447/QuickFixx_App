@@ -3,14 +3,14 @@ package com.example.quickfixx.ViewModels
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import retrofit2.HttpException
 import com.example.quickfixx.domain.model.Tutor
 import com.example.quickfixx.repository.Tutor.TutorRepo
 import com.example.quickfixx.screens.auth.Electrician.ElectricianScreenState
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -67,6 +67,40 @@ class ElectricianViewModel @Inject constructor(
             }
         }
     }
+
+    fun updateSelectedTutor(tutor: Tutor) {
+        _state.update { currentState ->
+            currentState.copy(tutor = tutor)
+        }
+    }
+
+    suspend fun getTutorById(tutorId: String): Tutor? {
+        return try {
+            var tutor = tutorRepo.getTutorById(tutorId)
+
+            // If tutor is null, wait a bit and retry (fixes race condition)
+            if (tutor == null) {
+                delay(500) // Wait 500ms before retrying
+                tutor = tutorRepo.getTutorById(tutorId)
+            }
+
+            tutor?.let {
+                Log.d("Tutor", it.name)
+                _state.update { currentState -> currentState.copy(tutor = it) }
+            }
+            tutor
+        } catch (e: HttpException) {
+            if (e.code() == 500) {
+                null // Return null if tutor is not found
+            } else {
+                throw e // Re-throw the exception for other HTTP errors
+            }
+        } catch (e: Exception) {
+            Log.e("ElectricianViewModel", "Error fetching tutor by ID", e)
+            null
+        }
+    }
+
 
     fun saveTutor(name:String, uid: Int, contact: String, email: String, subject: String, fees: Int, bio: String, experience: Int, availability: String, image: String){
         val tutorBody = Tutor(name, uid, contact, email, subject, fees, 0f, bio, experience, availability, image)

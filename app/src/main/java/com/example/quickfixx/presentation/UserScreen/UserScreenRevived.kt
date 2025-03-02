@@ -1,7 +1,9 @@
 package com.example.quickfixx.presentation.UserScreen
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.net.Uri
+import android.os.Environment
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -91,6 +93,11 @@ import com.example.quickfixx.presentation.sign_in.SignInViewModel
 import com.example.quickfixx.presentation.sign_in.UserData
 import com.example.quickfixx.ui.theme.DeepBlue
 import com.example.quickfixx.ui.theme.Silver
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.InputStream
+import java.util.UUID
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -290,7 +297,7 @@ fun UserCard(
                     )
                     Spacer(
                         modifier = Modifier
-                            .width(220.dp)
+                            .width(250.dp)
                     )
                     Icon(
                         imageVector = Icons.Rounded.ArrowForwardIos,
@@ -298,6 +305,7 @@ fun UserCard(
                         modifier = Modifier
                             .size(22.dp)
                             .padding(top = 5.dp)
+
                     )
                 }
             }
@@ -429,6 +437,7 @@ fun UserCard(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .padding(5.dp)
+                            .fillMaxWidth()
                             .clickable {
                                 navController.navigate("edit_profile")
                             }
@@ -446,7 +455,8 @@ fun UserCard(
                         )
                         Spacer(
                             modifier = Modifier
-                                .padding(10.dp)
+                                .padding(vertical = 10.dp)
+                                .padding(horizontal = 65.dp)
                         )
                         Icon(
                             imageVector = Icons.Rounded.ArrowForwardIos,
@@ -464,6 +474,7 @@ fun UserCard(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .padding(5.dp)
+                            .fillMaxWidth()
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Reviews,
@@ -512,6 +523,7 @@ fun UserCard(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .padding(5.dp)
+                            .fillMaxWidth()
                     ) {
 
                         Icon(
@@ -545,6 +557,7 @@ fun UserCard(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .padding(5.dp)
+                            .fillMaxWidth()
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Info,
@@ -578,6 +591,7 @@ fun UserCard(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .padding(5.dp)
+                            .fillMaxWidth()
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.PersonPin,
@@ -614,6 +628,7 @@ fun UserCard(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .padding(5.dp)
+                            .fillMaxWidth()
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Logout,
@@ -699,7 +714,7 @@ fun TwoCardsBelowUserCard() {
                 .clip(RoundedCornerShape(10.dp))
                 .background(Color.White)
                 .padding(15.dp)
-                .padding(vertical = 10.dp)
+                .padding(vertical = 20.dp)
 
         ) {
             Row(
@@ -708,7 +723,6 @@ fun TwoCardsBelowUserCard() {
                 Icon(
                     imageVector = Icons.Outlined.PersonPin,
                     contentDescription = "ServiceProvider",
-
                     )
                 Text(
                     text = "Tutor",
@@ -722,37 +736,37 @@ fun TwoCardsBelowUserCard() {
 
 @Composable
 fun ProfileScreen(navController: NavController, state: SignInState, electricianViewModel: ElectricianViewModel) {
-
+    val context = LocalContext.current
     val notification = rememberSaveable { mutableStateOf("") }
+
     if (notification.value.isNotEmpty()) {
-        Toast.makeText(LocalContext.current, notification.value, Toast.LENGTH_LONG).show()
+        Toast.makeText(context, notification.value, Toast.LENGTH_LONG).show()
         notification.value = ""
     }
 
     val user = state.user
-
     var name by rememberSaveable { mutableStateOf(user?.name ?: "Name") }
     var username by rememberSaveable { mutableStateOf(user?.name ?: "Username") }
-    var bio by rememberSaveable { mutableStateOf( "Bio") }
+    var bio by rememberSaveable { mutableStateOf("Bio") }
     var availability by rememberSaveable { mutableStateOf("Available Days") }
     var fees by rememberSaveable { mutableStateOf("fees") }
     var experience by rememberSaveable { mutableStateOf("Experience") }
 
-    Log.d("EDIT PROFILE SCREEN", electricianViewModel.title.toString())
-    Log.d("INFO PROFILE SCREEN", user?.name ?: "No user found")
-
-    val subjects = listOf("Microprocessor", "Data Structures", "Mobile Computing", "Engineering Maths")
-    var selectedSubject by rememberSaveable { mutableStateOf(subjects[0]) }
-
     val imageUri = rememberSaveable { mutableStateOf(user?.image ?: "") }
-    val painter = rememberAsyncImagePainter(
-        if (imageUri.value.isEmpty()) R.drawable.ic_search else imageUri.value
-    )
+
+    // Image picker
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { imageUri.value = it.toString() }
+        uri?.let {
+            val savedImagePath = saveImageToLocalStorage(context, uri)
+            imageUri.value = savedImagePath
+        }
     }
+
+    val painter = rememberAsyncImagePainter(
+        if (imageUri.value.isEmpty()) R.drawable.ic_search else imageUri.value
+    )
 
     Column(
         modifier = Modifier
@@ -761,13 +775,12 @@ fun ProfileScreen(navController: NavController, state: SignInState, electricianV
             .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Profile Image Section
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .size(120.dp)
                 .clip(CircleShape)
-                .background(Color.Gray) // Fallback background color
+                .background(Color.Gray)
                 .clickable { launcher.launch("image/*") }
         ) {
             Image(
@@ -775,8 +788,8 @@ fun ProfileScreen(navController: NavController, state: SignInState, electricianV
                 contentDescription = "Profile Image",
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(CircleShape), // Ensures it remains circular
-                contentScale = ContentScale.Crop // Ensures full coverage of the circle
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
             )
         }
 
@@ -790,159 +803,50 @@ fun ProfileScreen(navController: NavController, state: SignInState, electricianV
 
         Spacer(modifier = Modifier.height(17.dp))
 
-        // Input Fields
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp)
-        ) {
-            ProfileTextField(label = "Name", value = name, onValueChange = { name = it })
-            ProfileTextField(label = "Username", value = username, onValueChange = { username = it })
-            ProfileTextField(label = "Bio", value = bio, onValueChange = { bio = it }, singleLine = false, height = 150.dp)
-
-            // Subject Dropdown
-            SubjectDropdown(selectedSubject) { selectedSubject = it }
-
-            ProfileTextField(label = "Available", value = availability, onValueChange = { availability = it })
-            ProfileTextField(label = "Experience", value = experience, onValueChange = { experience = it })
-            ProfileTextField(label = "Fees", value = fees, onValueChange = { fees = it })
-        }
-
-        Divider(thickness = 20.dp, modifier = Modifier.padding(vertical = 10.dp))
-
-        // Cancel & Save Buttons
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(text = "Cancel",
-                modifier = Modifier.clickable {
-                    notification.value = "Cancelled"
-                    navController.popBackStack()
-                })
-
-            Text(text = "Save",
-                modifier = Modifier.clickable {
-                    notification.value = "Profile updated"
-                    navController.popBackStack()
-                    if (user != null) {
-                        Log.d("INFO FROM EDIT PROFILE", name)
-                        electricianViewModel.saveTutor(
-                            name,
-                            user.id.toIntOrNull() ?: 0,
-                            user.contact,
-                            user.email,
-                            subject = electricianViewModel.title.toString(),
-                            fees.toIntOrNull() ?: 0,
-                            bio,
-                            experience.toIntOrNull() ?: 0,
-                            availability,
-                            image = imageUri.value // Save updated image
-                        )
-                    }
-                })
-        }
-    }
-}
-
-// Helper function for TextFields
-@Composable
-fun ProfileTextField(label: String, value: String, onValueChange: (String) -> Unit, singleLine: Boolean = true, height: Dp = 56.dp) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        Text(text = label, modifier = Modifier.fillMaxWidth())
-        TextField(
-            value = value,
-            onValueChange = onValueChange,
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Gray,
-                focusedTextColor = Color.Black
-            ),
-            singleLine = singleLine,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(height)
+        // Save button
+        Text(
+            text = "Save",
+            modifier = Modifier.clickable {
+                notification.value = "Profile updated"
+                navController.popBackStack()
+                if (user != null) {
+                    electricianViewModel.saveTutor(
+                        name,
+                        user.id.toIntOrNull() ?: 0,
+                        user.contact,
+                        user.email,
+                        subject = electricianViewModel.title.toString(),
+                        fees.toIntOrNull() ?: 0,
+                        bio,
+                        experience.toIntOrNull() ?: 0,
+                        availability,
+                        image = imageUri.value
+                    )
+                }
+            }
         )
     }
 }
 
-// Dropdown menu for subjects
-@Composable
-fun SubjectDropdown(selectedSubject: String, onSubjectSelected: (String) -> Unit) {
-    val subjects = listOf("Microprocessor", "Data Structures", "Mobile Computing", "Engineering Maths")
-    var expanded by rememberSaveable { mutableStateOf(false) }
+fun saveImageToLocalStorage(context: Context, uri: Uri): String {
+    try {
+        // Define the directory path
+        val profileDirectory = File(Environment.getExternalStorageDirectory(), "QuickFixx_App/profile")
+        if (!profileDirectory.exists()) profileDirectory.mkdirs()
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-    ) {
-        Text(text = "Subject", modifier = Modifier.width(100.dp))
-        Box(modifier = Modifier
-            .clickable { expanded = true }
-            .background(Color.Gray)
-            .padding(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(selectedSubject, modifier = Modifier.padding(8.dp))
-                Icon(Icons.Default.ArrowDropDown, contentDescription = "Dropdown arrow")
-            }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                subjects.forEach { subject ->
-                    DropdownMenuItem(
-                        text = { Text(subject) },
-                        onClick = {
-                            onSubjectSelected(subject)
-                            expanded = false
-                        }
-                    )
-                }
+        // Create file with a unique name
+        val file = File(profileDirectory, "profile_${System.currentTimeMillis()}.jpg")
+
+        // Copy data from selected image URI to the new file
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            FileOutputStream(file).use { outputStream ->
+                inputStream.copyTo(outputStream)
             }
         }
-    }
-}
 
-
-@Composable
-fun ProfileImage() {
-    val imageUri = rememberSaveable { mutableStateOf("") }
-    val painter = rememberAsyncImagePainter(
-        if (imageUri.value.isEmpty())
-            R.drawable.ic_search
-        else
-            imageUri.value
-    )
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { imageUri.value = it.toString() }
-    }
-
-    Column(
-        modifier = Modifier
-            .padding(8.dp)
-            .fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Card(
-            shape = CircleShape,
-            modifier = Modifier
-                .padding(8.dp)
-                .size(100.dp)
-        ) {
-            Image(
-                painter = painter,
-                contentDescription = null,
-                modifier = Modifier
-                    .wrapContentSize()
-                    .clickable { launcher.launch("image/*") },
-                contentScale = ContentScale.Crop
-            )
-        }
-        Text(text = "Change profile picture")
+        return file.absolutePath
+    } catch (e: IOException) {
+        e.printStackTrace()
+        return ""
     }
 }

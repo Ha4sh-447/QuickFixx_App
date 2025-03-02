@@ -25,4 +25,8 @@ class TutorRepoImpl @Inject constructor (
         api.updateTutorProfile(tutorid, tutorBody)
     }
 
+    override suspend fun getTutorById(tutorid: String): Tutor? {
+        return api.getTutorById(tutorid)
+    }
+
 }
