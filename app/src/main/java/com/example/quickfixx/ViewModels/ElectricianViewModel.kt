@@ -15,6 +15,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import javax.inject.Inject
 
 
@@ -74,6 +77,52 @@ class ElectricianViewModel @Inject constructor(
         }
     }
 
+    fun updateTutor(
+        name: String,
+        userId: Int,
+        contact: String,
+        email: String,
+        subject: String,
+        fees: Int,
+        bio: String,
+        experience: Int,
+        availability: String,
+        image: String,
+        tutorId: Int
+    ) {
+        viewModelScope.launch {
+            try {
+                // Create JSON for request body
+                val tutorJson = JSONObject().apply {
+                    put("name", name)
+                    put("userId", userId)
+                    put("contact", contact)
+                    put("email", email)
+                    put("subject", subject)
+                    put("fees", fees)
+                    put("bio", bio)
+                    put("experience", experience)
+                    put("availability", availability)
+                    put("image", image)
+                }
+
+                // Convert to RequestBody
+                val requestBody = tutorJson.toString()
+                    .toRequestBody("application/json".toMediaTypeOrNull())
+
+                // Call API
+                tutorRepo.updateTutorProfile(tutorId.toString(), requestBody)
+
+                // Update local state if needed
+                // You might want to refresh your tutor data here
+
+            } catch (e: Exception) {
+                // Handle errors
+                Log.e("ElectricianViewModel", "Error updating tutor: ${e.message}")
+            }
+        }
+    }
+
     suspend fun getTutorById(tutorId: String): Tutor? {
         return try {
             var tutor = tutorRepo.getTutorById(tutorId)
@@ -103,7 +152,7 @@ class ElectricianViewModel @Inject constructor(
 
 
     fun saveTutor(name:String, uid: Int, contact: String, email: String, subject: String, fees: Int, bio: String, experience: Int, availability: String, image: String){
-        val tutorBody = Tutor(name, uid, contact, email, subject, fees, 0f, bio, experience, availability, image)
+        val tutorBody = Tutor(0, name, uid, contact, email, subject, fees, 0f, bio, experience, availability, image, role="tutor")
         Log.d("INFO FROM SAVE TUTOR", tutorBody.name)
 
         viewModelScope.launch {

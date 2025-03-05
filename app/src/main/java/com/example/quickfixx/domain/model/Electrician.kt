@@ -29,6 +29,7 @@ data class Electrician(
 }
 
 data class Tutor(
+    val id: Int = 0,
     val name: String,
     val uid: Int,
     val contact: String,
@@ -39,23 +40,25 @@ data class Tutor(
     val bio: String,
     val experience: Int,
     val availability: String,
-    val image: String
-){
+    val image: String,
+    val role: String // Added role field
+) {
     fun convertToJson(): RequestBody {
-        val jsonObj = JSONObject()
-        jsonObj.put("name", name)
-        jsonObj.put("uid", uid)
-        jsonObj.put("contact", contact)
-        jsonObj.put("email", email)
-        jsonObj.put("subject", subject)
-        jsonObj.put("fees", fees)
-        jsonObj.put("rating", rating)
-        jsonObj.put("bio", bio)
-        jsonObj.put("experience", experience)
-        jsonObj.put("availability", availability)
-        jsonObj.put("image", image)
+        val jsonObj = JSONObject().apply {
+            put("name", name)
+            put("uid", uid)
+            put("contact", contact)
+            put("email", email)
+            put("subject", subject)
+            put("fees", fees)
+            put("rating", rating)
+            put("bio", bio)
+            put("experience", experience)
+            put("availability", availability)
+            put("image", image)
+            put("role", role) // Include role in JSON request
+        }
 
         return jsonObj.toString().toRequestBody("application/json".toMediaTypeOrNull())
     }
-
 }

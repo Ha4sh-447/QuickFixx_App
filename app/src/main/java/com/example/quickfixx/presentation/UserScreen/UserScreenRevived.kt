@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -51,12 +52,15 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -77,6 +81,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -86,11 +91,13 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.quickfixx.R
 import com.example.quickfixx.ViewModels.ElectricianViewModel
+import com.example.quickfixx.domain.model.Tutor
 import com.example.quickfixx.domain.model.User
 import com.example.quickfixx.presentation.HomePage.BottomNavigationItem
 import com.example.quickfixx.presentation.sign_in.SignInState
 import com.example.quickfixx.presentation.sign_in.SignInViewModel
 import com.example.quickfixx.presentation.sign_in.UserData
+import com.example.quickfixx.screens.auth.Electrician.ElectricianScreenState
 import com.example.quickfixx.ui.theme.DeepBlue
 import com.example.quickfixx.ui.theme.Silver
 import java.io.File
@@ -439,8 +446,14 @@ fun UserCard(
                             .padding(5.dp)
                             .fillMaxWidth()
                             .clickable {
+                            if (user?.role == "tutor") {
+                                // Navigate to update profile screen if user is already a tutor
+                                navController.navigate("update_tutor_profile")
+                            } else {
+                                // Navigate to sign up as tutor screen if user is not a tutor
                                 navController.navigate("edit_profile")
                             }
+                        }
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Person4,
@@ -451,7 +464,7 @@ fun UserCard(
                                 .padding(10.dp)
                         )
                         Text(
-                            text = "Sign up as Tutor"
+                            text = if (user?.role != "tutor") "Sign up as Tutor" else "Update your profile"
                         )
                         Spacer(
                             modifier = Modifier
@@ -734,6 +747,7 @@ fun TwoCardsBelowUserCard() {
 }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(navController: NavController, state: SignInState, electricianViewModel: ElectricianViewModel) {
     val context = LocalContext.current
@@ -745,14 +759,25 @@ fun ProfileScreen(navController: NavController, state: SignInState, electricianV
     }
 
     val user = state.user
-    var name by rememberSaveable { mutableStateOf(user?.name ?: "Name") }
-    var username by rememberSaveable { mutableStateOf(user?.name ?: "Username") }
-    var bio by rememberSaveable { mutableStateOf("Bio") }
-    var availability by rememberSaveable { mutableStateOf("Available Days") }
-    var fees by rememberSaveable { mutableStateOf("fees") }
-    var experience by rememberSaveable { mutableStateOf("Experience") }
+    var name by rememberSaveable { mutableStateOf(user?.name ?: "") }
+    var username by rememberSaveable { mutableStateOf(user?.name ?: "") }
+    var bio by rememberSaveable { mutableStateOf("") }
+    var availability by rememberSaveable { mutableStateOf("") }
+    var fees by rememberSaveable { mutableStateOf("") }
+    var experience by rememberSaveable { mutableStateOf("") }
 
     val imageUri = rememberSaveable { mutableStateOf(user?.image ?: "") }
+
+    // Subject dropdown setup
+    val subjects = mapOf(
+        "Microprocessor" to "microprocessors",
+        "Data Structures" to "DS",
+        "Mobile Computing" to "MC",
+        "Engineering Maths" to "EM"
+    )
+
+    var selectedSubject by rememberSaveable { mutableStateOf(subjects.entries.find { it.value == electricianViewModel.title.value }?.key ?: "Select Subject") }
+    var expanded by remember { mutableStateOf(false) }
 
     // Image picker
     val launcher = rememberLauncherForActivityResult(
@@ -770,11 +795,12 @@ fun ProfileScreen(navController: NavController, state: SignInState, electricianV
 
     Column(
         modifier = Modifier
+            .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(8.dp)
-            .fillMaxWidth(),
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Profile Image
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -801,12 +827,102 @@ fun ProfileScreen(navController: NavController, state: SignInState, electricianV
             color = Color.Blue
         )
 
-        Spacer(modifier = Modifier.height(17.dp))
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Editable Fields
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Name") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedTextField(
+            value = username,
+            onValueChange = { username = it },
+            label = { Text("Username") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedTextField(
+            value = bio,
+            onValueChange = { bio = it },
+            label = { Text("Bio") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Dropdown menu for subjects
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = selectedSubject,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Subject") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                subjects.keys.forEach { subject ->
+                    DropdownMenuItem(
+                        text = { Text(subject) },
+                        onClick = {
+                            selectedSubject = subject
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedTextField(
+            value = availability,
+            onValueChange = { availability = it },
+            label = { Text("Availability") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedTextField(
+            value = fees,
+            onValueChange = { fees = it },
+            label = { Text("Fees") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedTextField(
+            value = experience,
+            onValueChange = { experience = it },
+            label = { Text("Experience") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
 
         // Save button
-        Text(
-            text = "Save",
-            modifier = Modifier.clickable {
+        Button(
+            onClick = {
                 notification.value = "Profile updated"
                 navController.popBackStack()
                 if (user != null) {
@@ -815,16 +931,231 @@ fun ProfileScreen(navController: NavController, state: SignInState, electricianV
                         user.id.toIntOrNull() ?: 0,
                         user.contact,
                         user.email,
-                        subject = electricianViewModel.title.toString(),
+                        subject = subjects[selectedSubject] ?: "",
                         fees.toIntOrNull() ?: 0,
                         bio,
                         experience.toIntOrNull() ?: 0,
                         availability,
-                        image = imageUri.value
+                        image = imageUri.value,
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Save")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun UpdateTutorProfileScreen(
+    navController: NavController,
+    state: SignInState,
+    electricianViewModel: ElectricianViewModel,
+    tutorState: ElectricianScreenState // Assuming you have a TutorData class to hold tutor information
+) {
+    val context = LocalContext.current
+    val notification = rememberSaveable { mutableStateOf("") }
+
+    val tutorData = tutorState.tutor
+    if (notification.value.isNotEmpty()) {
+        Toast.makeText(context, notification.value, Toast.LENGTH_LONG).show()
+        notification.value = ""
+    }
+
+    val user = state.user
+
+    // Pre-populate fields with existing tutor data
+    var name by rememberSaveable { mutableStateOf(user?.name ?: "") }
+    var bio by rememberSaveable { mutableStateOf(tutorData?.bio ?: "") }
+    var availability by rememberSaveable { mutableStateOf(tutorData?.availability ?: "") }
+    var fees by rememberSaveable { mutableStateOf(tutorData?.fees?.toString() ?: "") }
+    var experience by rememberSaveable { mutableStateOf(tutorData?.experience?.toString() ?: "") }
+
+    val imageUri = rememberSaveable { mutableStateOf(tutorData?.image ?: user?.image ?: "") }
+
+    // Subject dropdown setup
+    val subjects = mapOf(
+        "Microprocessor" to "microprocessors",
+        "Data Structures" to "DS",
+        "Mobile Computing" to "MC",
+        "Engineering Maths" to "EM"
+    )
+
+    var selectedSubject by rememberSaveable {
+        mutableStateOf(
+            subjects.entries.find { it.value == tutorData?.subject }?.key
+                ?: subjects.entries.find { it.value == electricianViewModel.title.value }?.key
+                ?: "Select Subject"
+        )
+    }
+    var expanded by remember { mutableStateOf(false) }
+
+    // Image picker
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            val savedImagePath = saveImageToLocalStorage(context, uri)
+            imageUri.value = savedImagePath
+        }
+    }
+
+    val painter = rememberAsyncImagePainter(
+        if (imageUri.value.isEmpty()) R.drawable.ic_search else imageUri.value
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Header text
+        Text(
+            text = "Update Tutor Profile",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        // Profile Image
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .background(Color.Gray)
+                .clickable { launcher.launch("image/*") }
+        ) {
+            Image(
+                painter = painter,
+                contentDescription = "Profile Image",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        Text(
+            text = "Change Profile Picture",
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .clickable { launcher.launch("image/*") },
+            color = Color.Blue
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Editable Fields
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Name") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedTextField(
+            value = bio,
+            onValueChange = { bio = it },
+            label = { Text("Bio") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Dropdown menu for subjects
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = selectedSubject,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Subject") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                subjects.keys.forEach { subject ->
+                    DropdownMenuItem(
+                        text = { Text(subject) },
+                        onClick = {
+                            selectedSubject = subject
+                            expanded = false
+                        }
                     )
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedTextField(
+            value = availability,
+            onValueChange = { availability = it },
+            label = { Text("Availability") },
+            modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedTextField(
+            value = fees,
+            onValueChange = { fees = it },
+            label = { Text("Fees") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedTextField(
+            value = experience,
+            onValueChange = { experience = it },
+            label = { Text("Experience") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Update button
+        Button(
+            onClick = {
+                notification.value = "Profile updated successfully"
+                navController.popBackStack()
+                if (user != null) {
+                    electricianViewModel.updateTutor(
+                        name = name,
+                        userId = user.id.toIntOrNull() ?: 0,
+                        contact = user.contact,
+                        email = user.email,
+                        subject = subjects[selectedSubject] ?: tutorData?.subject ?: "",
+                        fees = fees.toIntOrNull() ?: tutorData?.fees ?: 0,
+                        bio = bio,
+                        experience = experience.toIntOrNull() ?: tutorData?.experience ?: 0,
+                        availability = availability,
+                        image = imageUri.value,
+                        tutorId = tutorData?.id ?: 0  // This is the ID of the tutor record to update
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Update Profile", color = Color.White)
+        }
     }
 }
 

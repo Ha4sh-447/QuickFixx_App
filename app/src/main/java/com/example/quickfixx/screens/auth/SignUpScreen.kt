@@ -34,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -49,6 +50,251 @@ import com.example.quickfixx.domain.model.User
 import com.example.quickfixx.presentation.sign_in.GoogleAuthUiClient
 import com.example.quickfixx.presentation.sign_in.SignInState
 import com.example.quickfixx.presentation.sign_in.SignInViewModel
+import kotlinx.coroutines.launch
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LoginScreen(
+    state: SignInState,
+    navController: NavController,
+    viewModel: SignInViewModel,
+    onSignInClick: () -> Unit,
+    googleAuthClient: GoogleAuthUiClient,
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val auth = googleAuthClient.getAut()
+
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var emailError by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf("") }
+
+    // Observe changes in state to handle navigation or error messages
+    LaunchedEffect(state.user) {
+        state.user?.let {
+            // Successfully retrieved user, navigate to home
+            navController.navigate("home") {
+                popUpTo(0)
+            }
+        }
+    }
+
+    // Handle sign-in errors
+    LaunchedEffect(state.signInError) {
+        state.signInError?.let { error ->
+            Toast.makeText(
+                context,
+                error,
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    fun validateLoginFields(): Boolean {
+        emailError = if (email.isEmpty()) "Email is required" else ""
+        passwordError = if (password.isEmpty()) "Password is required" else ""
+        return emailError.isEmpty() && passwordError.isEmpty()
+    }
+
+    fun loginUser(email: String, password: String) {
+        if (!validateLoginFields()) return
+
+        coroutineScope.launch {
+            try {
+                // First, try to retrieve user by email
+                val user = viewModel.getUserByEmail(email)
+
+                if (user != null) {
+                    // If user exists, try Firebase authentication
+                    auth.signInWithEmailAndPassword(email, password)
+                        .addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                // Authentication successful, navigation will be handled by LaunchedEffect
+                                viewModel.getUser(email)
+                            } else {
+                                // Firebase authentication failed
+                                Toast.makeText(
+                                    context,
+                                    "Login failed: ${task.exception?.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                } else {
+                    // User not found in the database
+                    Toast.makeText(
+                        context,
+                        "User not found",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            } catch (e: Exception) {
+                // Handle any unexpected errors
+                Toast.makeText(
+                    context,
+                    "Error: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxHeight(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = "Login",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(
+                            onClick = {
+                                navController.popBackStack()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBackIos,
+                                contentDescription = "back icon",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                )
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    text = "Email",
+                    fontSize = 20.sp,
+                    modifier = Modifier.padding(12.dp)
+                )
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    enabled = true,
+                    placeholder = { Text(text = "Enter your email") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.MailOutline,
+                            contentDescription = null
+                        )
+                    },
+                    singleLine = true,
+                    modifier = Modifier.padding(3.dp),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next
+                    )
+                )
+                if (emailError.isNotEmpty()) {
+                    Text(
+                        text = emailError,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(start = 12.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Password",
+                    fontSize = 20.sp,
+                    modifier = Modifier.padding(12.dp)
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    enabled = true,
+                    placeholder = { Text(text = "Enter your password") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = null
+                        )
+                    },
+                    singleLine = true,
+                    modifier = Modifier.padding(3.dp),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
+                    visualTransformation = PasswordVisualTransformation()
+                )
+                if (passwordError.isNotEmpty()) {
+                    Text(
+                        text = passwordError,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(start = 12.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Button(
+                    onClick = { loginUser(email, password) },
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .width(300.dp)
+                ) {
+                    Text(
+                        text = "Login",
+                        letterSpacing = 1.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "OR",
+                    fontSize = 20.sp,
+                    modifier = Modifier.padding(12.dp)
+                )
+
+                Button(
+                    onClick = { onSignInClick() },
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .width(300.dp)
+                ) {
+                    Text(
+                        text = "Login with Google",
+                        letterSpacing = 1.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Button(
+                    onClick = { navController.navigate("signup") },
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .width(300.dp)
+                ) {
+                    Text(
+                        text = "Sign Up",
+                        letterSpacing = 1.sp
+                    )
+                }
+            }
+        }
+    }
+}
 
 
 @OptIn(ExperimentalMaterial3Api::class)

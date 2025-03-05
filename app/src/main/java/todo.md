@@ -1,0 +1,5 @@
+- Login page
+    - Login form, bottom should have route to sign up screen
+- Update Users screen picture after updating the user picture
+- Login functionality wont have continue with google
+- Update UI

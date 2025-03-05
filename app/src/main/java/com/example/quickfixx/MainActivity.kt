@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -26,10 +28,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.quickfixx.ViewModels.ElectricianViewModel
+import com.example.quickfixx.domain.model.Tutor
 import com.example.quickfixx.domain.model.User
 import com.example.quickfixx.presentation.HomePage.HomeVM
 import com.example.quickfixx.presentation.Messages
 import com.example.quickfixx.presentation.UserScreen.ProfileScreen
+import com.example.quickfixx.presentation.UserScreen.UpdateTutorProfileScreen
 import com.example.quickfixx.presentation.UserScreen.UserCard
 import com.example.quickfixx.presentation.UserScreen.UserViewModel
 import com.example.quickfixx.presentation.sign_in.GoogleAuthUiClient
@@ -137,6 +141,28 @@ class MainActivity : ComponentActivity() {
 //                            val electricianViewModel: ElectricianViewModel = hiltViewModel()
                             val state by viewModel.state.collectAsStateWithLifecycle()
                             ProfileScreen(navController=navController, state = state, electricianViewModel = eVM)
+                        }
+                        composable("update_tutor_profile") {
+                            val state by viewModel.state.collectAsStateWithLifecycle()
+                            // You'll need to fetch the tutor data before passing it to the screen
+                            // This could be done using LaunchedEffect inside the screen or here
+
+                            // Option 1: Fetch data in the composable
+                            val userId = state.user?.id?.toString() ?: ""
+                            val tutorData by eVM.state.collectAsStateWithLifecycle()
+
+//                            LaunchedEffect(userId) {
+//                                if (userId.isNotEmpty()) {
+//                                    tutorData = eVM.getTutorByUserId(userId)
+//                                }
+//                            }
+
+                            UpdateTutorProfileScreen(
+                                navController = navController,
+                                state = state,
+                                electricianViewModel = eVM,
+                                tutorState = tutorData
+                            )
                         }
 
                         composable("electricians/{tabIndex}") { backStackEntry ->
