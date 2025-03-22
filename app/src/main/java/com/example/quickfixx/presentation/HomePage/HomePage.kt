@@ -204,8 +204,6 @@ fun HomePage(
                 modifier = Modifier
                     .padding(top = 10.dp)
                     .padding(30.dp)
-//                    .clip(RoundedCornerShape(10.dp))
-//                    .background(Color.Red)
                     .height(100.dp)
                     .fillMaxSize()
             ) {
@@ -218,7 +216,6 @@ fun HomePage(
 
                     if (userData != null) {
                         Text(
-                //                        text = "Hello " + if(user!=null) user.name else userData?.username,
                             text = "Hello " +userData.username ,
                             color = Color.White,
                             style = MaterialTheme.typography.headlineMedium
@@ -270,10 +267,6 @@ fun HomePage(
                 .size(20.dp)
                 .background(color = Color.Green)
             )
-//            Text(
-//                text = "Hello world",
-//                color = Color.Black
-//            )
         }
     }
 }
@@ -319,52 +312,6 @@ fun ServicesSection(services: List<Services>, navController: NavController, home
 }
 
 @Composable
-fun RenderIcons(
-    list: List<ServiceIcon>,
-    navController: NavController
-){
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(4),
-        modifier = Modifier
-            .padding(10.dp)
-            .padding(
-                start
-                = 30.dp
-            )
-    ) {
-        items(list.size) { index ->
-            Box{
-                Icon(
-                    imageVector = list[index].icon,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .background(Color.White)
-                        .clip(RoundedCornerShape(9.dp))
-                        .padding(9.dp)
-                        .clickable {
-                            navController.navigate("electricians/${list[index].tabIndex}") {
-                                // Pass the tabIndex as argument to the route
-                                launchSingleTop = true
-                                popUpTo(navController.graph.startDestinationId) {
-                                    saveState = true
-                                }
-//                                route("electricians/${list[index].tabIndex}")
-                            }
-                        }
-                )
-                Text(
-                    text = "Repair",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(top = 10.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
 fun ServiceItem(
     homeVM: HomeVM,
     onTitleChange: (String) -> Unit,
@@ -374,49 +321,30 @@ fun ServiceItem(
     Box(
         modifier = Modifier
             .padding(7.5.dp)
-//            .aspectRatio(1f)
             .clip(RoundedCornerShape(10.dp))
             .size(290.dp)
-//            .background(Color.Red)
             .background(Color.White)
             .clickable {
                 Log.d("INFO from service-item", service.title)
                 homeVM.currService(service, service.title)
                 onTitleChange(service.title)
-
-//                if(homeVM.homeState.value.title!=null){
-                    navController.navigate("electricians/0")
-//                }
-//                navController.navigate("electricians/0")
+                navController.navigate("electricians/0")
             }
     ){
 
         Box(
             modifier = Modifier
-//                .fillMaxSize()
                 .padding(10.dp)
-//                .background(Color.Blue)
                 .background(Color.White)
         ){
 
-//            Icon(
-//                imageVector = service.icon,
-//                contentDescription = service.description,
-//                tint = Color.Black,
-//                modifier = Modifier
-//                    .align(Alignment.BottomStart)
-//                    .size(50.dp)
-//
-//            )
             Image(
                 painter = painterResource(id = service.image),
                 contentDescription = service.description,
                 modifier = Modifier
                     .fillMaxSize()
-//                    .size(250.dp)
                     .fillMaxHeight()
                     .align(Alignment.TopStart)
-
             )
             Text(
                 text = service.title,
@@ -426,7 +354,6 @@ fun ServiceItem(
                     .align(Alignment.BottomStart)
                     .padding(top = 10.dp)
                     .padding(start = 20.dp),
-//                color = Color.White
                 color = Color.Black
             )
         }

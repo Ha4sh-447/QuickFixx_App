@@ -3,6 +3,7 @@ package com.example.quickfixx.presentation.UserScreen
 import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.util.Log
 import android.widget.Toast
@@ -87,6 +88,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.quickfixx.R
@@ -779,18 +781,44 @@ fun ProfileScreen(navController: NavController, state: SignInState, electricianV
     var selectedSubject by rememberSaveable { mutableStateOf(subjects.entries.find { it.value == electricianViewModel.title.value }?.key ?: "Select Subject") }
     var expanded by remember { mutableStateOf(false) }
 
+    // Permission launcher for storage access
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+//        val canReadStorage = permissions[Manifest.permission.READ_MEDIA] ?: false
+//        val canWriteStorage = permissions[Manifest.permission.WRITE_EXTERNAL_STORAGE] ?: false
+//
+//        if (canReadStorage && canWriteStorage) {
+//            // Permission granted, now launch image picker
+////            launcher.launch("image/*")
+//        } else {
+//            // Show error to user
+//            notification.value = "Storage permission required to select image"
+//        }
+    }
+
     // Image picker
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
             val savedImagePath = saveImageToLocalStorage(context, uri)
-            imageUri.value = savedImagePath
+            if (savedImagePath.isNotEmpty()) {
+                imageUri.value = savedImagePath
+                Log.d("ProfileImage", "Path saved to imageUri: $savedImagePath")
+            } else {
+                notification.value = "Failed to save image"
+            }
         }
     }
 
     val painter = rememberAsyncImagePainter(
-        if (imageUri.value.isEmpty()) R.drawable.ic_search else imageUri.value
+        if (imageUri.value.isEmpty())
+            R.drawable.ic_search
+        else if (imageUri.value.startsWith("/"))
+            File(imageUri.value).toUri()
+        else
+            imageUri.value
     )
 
     Column(
@@ -807,7 +835,17 @@ fun ProfileScreen(navController: NavController, state: SignInState, electricianV
                 .size(120.dp)
                 .clip(CircleShape)
                 .background(Color.Gray)
-                .clickable { launcher.launch("image/*") }
+                .clickable {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        // For Android 10+ we don't need permission for app-specific storage
+                        launcher.launch("image/*")
+                    } else {
+                        permissionLauncher.launch(arrayOf(
+//                            Manifest.permission.READ_EXTERNAL_STORAGE,
+//                            Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        ))
+                    }
+                }
         ) {
             Image(
                 painter = painter,
@@ -823,7 +861,16 @@ fun ProfileScreen(navController: NavController, state: SignInState, electricianV
             text = "Change Profile Picture",
             modifier = Modifier
                 .padding(top = 8.dp)
-                .clickable { launcher.launch("image/*") },
+                .clickable {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        launcher.launch("image/*")
+                    } else {
+//                        permissionLauncher.launch(arrayOf(
+//                            Manifest.permission.READ_EXTERNAL_STORAGE,
+//                            Manifest.permission.WRITE_EXTERNAL_STORAGE
+//                        ))
+                    }
+                },
             color = Color.Blue
         )
 
@@ -923,8 +970,14 @@ fun ProfileScreen(navController: NavController, state: SignInState, electricianV
         // Save button
         Button(
             onClick = {
+                val finalImageUri = if (imageUri.value.startsWith("content://")) {
+                    val savedPath = saveImageToLocalStorage(context, Uri.parse(imageUri.value))
+                    savedPath
+                } else {
+                    imageUri.value
+                }
+
                 notification.value = "Profile updated"
-                navController.popBackStack()
                 if (user != null) {
                     electricianViewModel.saveTutor(
                         name,
@@ -936,14 +989,52 @@ fun ProfileScreen(navController: NavController, state: SignInState, electricianV
                         bio,
                         experience.toIntOrNull() ?: 0,
                         availability,
-                        image = imageUri.value,
+                        image = finalImageUri,
                     )
                 }
+                navController.popBackStack()
             },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Save")
         }
+    }
+}
+
+// Updated image saving function
+fun saveImageToLocalStorage(context: Context, uri: Uri): String {
+    try {
+        // Add debugging log
+        Log.d("ProfileImage", "Saving image from URI: $uri")
+
+        // Use app-specific storage instead of external storage
+        val profileDirectory = File(context.getExternalFilesDir(null), "QuickFixx_App/profile")
+        if (!profileDirectory.exists()) {
+            val dirCreated = profileDirectory.mkdirs()
+            Log.d("ProfileImage", "Directory created: $dirCreated at ${profileDirectory.absolutePath}")
+        }
+
+        // Create file with a unique name
+        val fileName = "profile_${System.currentTimeMillis()}.jpg"
+        val file = File(profileDirectory, fileName)
+        Log.d("ProfileImage", "Saving to file: ${file.absolutePath}")
+
+        // Copy data from selected image URI to the new file
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            FileOutputStream(file).use { outputStream ->
+                val bytesCopied = inputStream.copyTo(outputStream)
+                Log.d("ProfileImage", "Bytes copied: $bytesCopied")
+            }
+        } ?: run {
+            Log.e("ProfileImage", "Failed to open input stream from $uri")
+            return ""
+        }
+
+        Log.d("ProfileImage", "Successfully saved image to: ${file.absolutePath}")
+        return file.absolutePath
+    } catch (e: Exception) {
+        Log.e("ProfileImage", "Error saving image", e)
+        return ""
     }
 }
 
@@ -1159,25 +1250,61 @@ fun UpdateTutorProfileScreen(
     }
 }
 
-fun saveImageToLocalStorage(context: Context, uri: Uri): String {
-    try {
-        // Define the directory path
-        val profileDirectory = File(Environment.getExternalStorageDirectory(), "QuickFixx_App/profile")
-        if (!profileDirectory.exists()) profileDirectory.mkdirs()
+//fun saveImageToLocalStorage(context: Context, uri: Uri): String {
+//    try {
+//        // Define the directory path
+//        val profileDirectory = File(Environment.getExternalStorageDirectory(), "QuickFixx_App/profile")
+//        if (!profileDirectory.exists()) profileDirectory.mkdirs()
+//
+//        // Create file with a unique name
+//        val file = File(profileDirectory, "profile_${System.currentTimeMillis()}.jpg")
+//
+//        // Copy data from selected image URI to the new file
+//        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+//            FileOutputStream(file).use { outputStream ->
+//                inputStream.copyTo(outputStream)
+//            }
+//        }
+//
+//        return file.absolutePath
+//    } catch (e: IOException) {
+//        e.printStackTrace()
+//        return ""
+//    }
+//}
 
-        // Create file with a unique name
-        val file = File(profileDirectory, "profile_${System.currentTimeMillis()}.jpg")
-
-        // Copy data from selected image URI to the new file
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            FileOutputStream(file).use { outputStream ->
-                inputStream.copyTo(outputStream)
-            }
-        }
-
-        return file.absolutePath
-    } catch (e: IOException) {
-        e.printStackTrace()
-        return ""
-    }
-}
+//fun saveImageToLocalStorage(context: Context, uri: Uri): String {
+//    try {
+//        // Add debugging log
+//        Log.d("ProfileImage", "Saving image from URI: $uri")
+//
+//        // Use app-specific storage instead of external storage
+//        val profileDirectory = File(context.getExternalFilesDir(null), "QuickFixx_App/profile")
+//        if (!profileDirectory.exists()) {
+//            val dirCreated = profileDirectory.mkdirs()
+//            Log.d("ProfileImage", "Directory created: $dirCreated at ${profileDirectory.absolutePath}")
+//        }
+//
+//        // Create file with a unique name
+//        val fileName = "profile_${System.currentTimeMillis()}.jpg"
+//        val file = File(profileDirectory, fileName)
+//        Log.d("ProfileImage", "Saving to file: ${file.absolutePath}")
+//
+//        // Copy data from selected image URI to the new file
+//        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+//            FileOutputStream(file).use { outputStream ->
+//                val bytesCopied = inputStream.copyTo(outputStream)
+//                Log.d("ProfileImage", "Bytes copied: $bytesCopied")
+//            }
+//        } ?: run {
+//            Log.e("ProfileImage", "Failed to open input stream from $uri")
+//            return ""
+//        }
+//
+//        Log.d("ProfileImage", "Successfully saved image to: ${file.absolutePath}")
+//        return file.absolutePath
+//    } catch (e: Exception) {
+//        Log.e("ProfileImage", "Error saving image", e)
+//        return ""
+//    }
+//}

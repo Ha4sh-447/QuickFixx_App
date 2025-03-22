@@ -94,8 +94,15 @@ import java.io.File
 import java.io.FileOutputStream
 import android.content.pm.PackageManager
 import android.location.Geocoder
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.core.content.ContextCompat
+import com.example.quickfixx.presentation.HomePage.BottomNavigationItem
 import com.google.android.gms.location.LocationServices
 import java.text.SimpleDateFormat
 import java.util.*
@@ -112,6 +119,32 @@ fun ProviderDetails(navController: NavController,
     if (selectedTutor != null) {
         Log.d("INFO", "PROVIDER DETAILS"+selectedTutor.name)
     }
+    val items = listOf(
+        BottomNavigationItem(
+            title = "Home",
+            selectedIcon = Icons.Filled.Home,
+//            unselectedIcon = Icons.Outlined.Home,
+            hasNews = false,
+            route = "home"
+        ),
+        BottomNavigationItem(
+            title = "Messages",
+            selectedIcon = Icons.Filled.Notifications,
+//            unselectedIcon = Icons.Outlined.Notifications,
+            hasNews = false,
+            route = "messages"
+        ),
+        BottomNavigationItem(
+            title = "Profile",
+            selectedIcon = Icons.Filled.Person,
+//            unselectedIcon = Icons.Outlined.Person,
+            hasNews = true,
+            route = "user_profile"
+        ),
+    )
+    var selectedItemIndex by rememberSaveable {
+        mutableStateOf(0)
+    }   
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.background
@@ -137,6 +170,40 @@ fun ProviderDetails(navController: NavController,
                         }
                     }
                 )
+            },
+            bottomBar = {
+                NavigationBar {
+                    items.forEachIndexed { index, item ->
+                        NavigationBarItem(
+//                        modifier = Modifier
+////                            .height(20.dp)
+//                            .padding(3.dp),
+                            selected = selectedItemIndex == index,
+                            onClick = {
+                                selectedItemIndex = index
+                                navController.navigate(item.route)
+                            },
+                            label = {
+                                Text(text = item.title)
+                            },
+//                        alwaysShowLabel = false,
+                            icon = {
+                                BadgedBox(
+                                    badge = {
+//                                        Badge()
+                                    }
+                                ) {
+                                    Icon(
+                                        modifier = Modifier
+                                            .size(30.dp),
+                                        imageVector = item.selectedIcon,
+                                        contentDescription = item.title
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
             }
         ) {
             Column(

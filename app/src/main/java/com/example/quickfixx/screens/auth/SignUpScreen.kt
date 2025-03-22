@@ -52,6 +52,41 @@ import com.example.quickfixx.presentation.sign_in.SignInState
 import com.example.quickfixx.presentation.sign_in.SignInViewModel
 import kotlinx.coroutines.launch
 
+@Composable
+fun AuthScreen(
+    state: SignInState,
+    navController: NavController,
+    viewModel: SignInViewModel,
+    onSignInClick: () -> Unit,
+    googleAuthClient: GoogleAuthUiClient
+) {
+    var isLoginScreen by remember { mutableStateOf(true) }
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        if (isLoginScreen) {
+            LoginScreen(
+                state = state,
+                navController = navController,
+                viewModel = viewModel,
+                onSignInClick = onSignInClick,
+                googleAuthClient = googleAuthClient,
+//                onSwitchToSignUp = { isLoginScreen = false }
+            )
+        } else {
+            SignUpScreen(
+                state = state,
+                navController = navController,
+                viewModel = viewModel,
+                onSignInClick = onSignInClick,
+                googleAuthClient = googleAuthClient,
+//                onSwitchToLogin = { isLoginScreen = true }
+            )
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

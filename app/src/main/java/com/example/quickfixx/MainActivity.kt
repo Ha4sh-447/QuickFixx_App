@@ -64,12 +64,6 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("CoroutineCreationDuringComposition")
     override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
-//            val generativeModel = GenerativeModel(
-//
-//                modelName = "gemini-pro-vision",
-//
-////                apiKey = BuildConfig.GOOGLE_API_KEY
-//            )
 
         Log.d("FIREBASE MESSAGING", "STARTED")
         // Get the device token
@@ -144,19 +138,7 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("update_tutor_profile") {
                             val state by viewModel.state.collectAsStateWithLifecycle()
-                            // You'll need to fetch the tutor data before passing it to the screen
-                            // This could be done using LaunchedEffect inside the screen or here
-
-                            // Option 1: Fetch data in the composable
-                            val userId = state.user?.id?.toString() ?: ""
                             val tutorData by eVM.state.collectAsStateWithLifecycle()
-
-//                            LaunchedEffect(userId) {
-//                                if (userId.isNotEmpty()) {
-//                                    tutorData = eVM.getTutorByUserId(userId)
-//                                }
-//                            }
-
                             UpdateTutorProfileScreen(
                                 navController = navController,
                                 state = state,
@@ -168,7 +150,6 @@ class MainActivity : ComponentActivity() {
                         composable("electricians/{tabIndex}") { backStackEntry ->
                             val arguments = requireNotNull(backStackEntry.arguments)
                             val tabIndex = arguments.getString("tabIndex")?.toIntOrNull() ?: 0
-//                            val EviewModel: ElectricianViewModel = hiltViewModel()
                             val homeVM: HomeVM = hiltViewModel()
                             val title by homeVM.title.collectAsStateWithLifecycle()
                             ElectricianData(navController = navController, viewModel = eVM, homeVM = homeVM, tabIndex = tabIndex, title=title)
