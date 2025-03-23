@@ -157,8 +157,9 @@ class MainActivity : ComponentActivity() {
                         composable("user_profile"){
 //                            ProfileScreen(onGoBack = { })
                             val userViewModel: UserViewModel = hiltViewModel()
+                            val state by viewModel.state.collectAsStateWithLifecycle()
                             UserCard(navController = navController,
-                                userData = googleAuthUiClient.getSignedInUser(),
+                                userData = state.userData,
                                 onSignOut = {
                                     lifecycleScope.launch {
                                         googleAuthUiClient.signOut()

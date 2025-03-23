@@ -1,6 +1,7 @@
 package com.example.quickfixx.presentation.UserScreen
 
 import android.annotation.SuppressLint
+import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import android.os.Build
@@ -106,6 +107,9 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 @SuppressLint("StateFlowValueCalledInComposition")
@@ -121,6 +125,7 @@ fun UserCard(
 ){
 //    val userState by viewModel.state.collectAsState()
     val user = viewModel.state.value.user
+    user?.image?.let { Log.d("USERIMAGE", it) }
 //    val user = userData?.let { viewModel.getUser(it.email) }
     val username = remember {
         mutableStateOf(user?.name)
@@ -251,15 +256,33 @@ fun UserCard(
                         .padding(vertical = 5.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (userData != null) {
-                        Image(
-                            painter =rememberAsyncImagePainter(userData.profilePictureUrl),
-                            contentDescription = "Profile picture",
-                            modifier = Modifier
-                                .size(50.dp)
-                                .clip(CircleShape)
-                        )
+//                    if (userData != null) {
+//                        Image(
+//                            painter =rememberAsyncImagePainter(userData.profilePictureUrl),
+//                            contentDescription = "Profile picture",
+//                            modifier = Modifier
+//                                .size(50.dp)
+//                                .clip(CircleShape)
+//                        )
+//                    }
+//                    if (userData != null) {
+                        // Use File URI scheme for local files
+                    val imageUri = if (user?.image?.startsWith("/") == true) {
+                        "file://${user.image}"
+                    } else {
+                        user?.image
                     }
+                    Log.d("INFO", "UPDATED URL")
+                    Log.d("IMAGE", imageUri.toString())
+
+                    Image(
+                        painter = rememberAsyncImagePainter(imageUri),
+                        contentDescription = "Profile picture",
+                        modifier = Modifier
+                            .size(50.dp)
+                            .clip(CircleShape)
+                    )
+//                    }
                     Column(
                         modifier = Modifier
                             .padding(horizontal = 8.dp)
@@ -337,15 +360,23 @@ fun UserCard(
                                     style = MaterialTheme.typography.headlineLarge
                                 )
 
-                                // Profile Image Picker
+                                // Profile Image Picker with local storage functionality
                                 val imageUri = rememberSaveable { mutableStateOf(user?.image ?: "") }
+                                val context = LocalContext.current
+                                val contentResolver = context.contentResolver
+
                                 val painter = rememberAsyncImagePainter(
                                     if (imageUri.value.isEmpty()) R.drawable.ic_search else imageUri.value
                                 )
+
                                 val launcher = rememberLauncherForActivityResult(
                                     contract = ActivityResultContracts.GetContent()
                                 ) { uri: Uri? ->
-                                    uri?.let { imageUri.value = it.toString() }
+                                    uri?.let {
+                                        // Save image locally and get the local path
+                                        val localPath = saveImageLocally(contentResolver, uri, context)
+                                        imageUri.value = localPath
+                                    }
                                 }
 
                                 Box(
@@ -379,6 +410,7 @@ fun UserCard(
                                     username.value?.let {
                                         TextField(
                                             value = it,
+                                            modifier = Modifier.fillMaxWidth(),
                                             onValueChange = { newValue -> username.value = newValue },
                                             label = { Text("Name") }
                                         )
@@ -387,6 +419,7 @@ fun UserCard(
                                     userEmail.value?.let {
                                         TextField(
                                             value = it,
+                                            modifier = Modifier.fillMaxWidth(),
                                             onValueChange = { newValue -> userEmail.value = newValue },
                                             label = { Text("Email") }
                                         )
@@ -395,6 +428,7 @@ fun UserCard(
                                     userContact.value?.let {
                                         TextField(
                                             value = it,
+                                            modifier = Modifier.fillMaxWidth(),
                                             onValueChange = { newValue -> userContact.value = newValue },
                                             label = { Text("Contact") }
                                         )
@@ -410,7 +444,7 @@ fun UserCard(
                                             user.name = username.value.toString()
                                             user.email = userEmail.value.toString()
                                             user.contact = userContact.value.toString()
-                                            user.image = imageUri.value // Update profile image
+                                            user.image = imageUri.value // Update profile image with local path
                                         }
                                         Log.d("User-Updated", user.toString())
                                         if (user != null) {
@@ -431,6 +465,7 @@ fun UserCard(
                     }
                 )
             }
+
             TwoCardsBelowUserCard()
             Column(
                     modifier = Modifier
@@ -680,6 +715,35 @@ fun UserCard(
             }
         }
 
+    }
+}
+
+// Helper function to save image locally
+private fun saveImageLocally(contentResolver: ContentResolver, sourceUri: Uri, context: Context): String {
+    try {
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val filename = "profile_$timestamp.jpg"
+
+        // Create file in app-specific directory
+        val imagesDir = File(context.filesDir, "profile_images")
+        if (!imagesDir.exists()) {
+            imagesDir.mkdirs()
+        }
+
+        val destinationFile = File(imagesDir, filename)
+
+        // Copy the image data
+        contentResolver.openInputStream(sourceUri)?.use { input ->
+            FileOutputStream(destinationFile).use { output ->
+                input.copyTo(output)
+            }
+        }
+
+        Log.d("ImageSave", "Image saved at: ${destinationFile.absolutePath}")
+        return destinationFile.absolutePath
+    } catch (e: Exception) {
+        Log.e("ImageSave", "Error saving image locally", e)
+        return sourceUri.toString() // Fallback to the original URI if saving fails
     }
 }
 

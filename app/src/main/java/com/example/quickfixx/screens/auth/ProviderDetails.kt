@@ -8,7 +8,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color.BLACK
 import android.graphics.Color.WHITE
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -99,6 +98,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.core.content.ContextCompat
@@ -106,6 +106,16 @@ import com.example.quickfixx.presentation.HomePage.BottomNavigationItem
 import com.google.android.gms.location.LocationServices
 import java.text.SimpleDateFormat
 import java.util.*
+import android.os.Build
+import android.os.Looper
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.heightIn
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "StateFlowValueCalledInComposition")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -632,7 +642,18 @@ fun BookButtonWithQR(
     tutor: Tutor  // Only keep tutor parameter to access all details
 ) {
     var showQRCode by remember { mutableStateOf(false) }
+    var locationText by remember { mutableStateOf("Fetching location...") }
     val context = LocalContext.current
+
+    // Permission launcher
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            // Handle permission denied
+            locationText = "Location permission denied"
+        }
+    }
 
     // Generate a unique booking reference
     val bookingReference = remember {
@@ -646,55 +667,47 @@ fun BookButtonWithQR(
         formatter.format(Date())
     }
 
-    // State for location
-    var locationText by remember { mutableStateOf("Fetching location...") }
+    // Create location client outside of LaunchedEffect
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
-    // Get current location
+    // Request permission and get location
     LaunchedEffect(Unit) {
         val locationPermission = android.Manifest.permission.ACCESS_FINE_LOCATION
         val hasPermission = ContextCompat.checkSelfPermission(context, locationPermission) ==
                 PackageManager.PERMISSION_GRANTED
 
-        if (hasPermission) {
-            try {
-                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                    if (location != null) {
-                        // Use Geocoder to get address from coordinates
-                        val geocoder = Geocoder(context, Locale.getDefault())
-                        try {
-                            val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-                            if (addresses != null && addresses.isNotEmpty()) {
-                                val address = addresses[0]
-                                locationText = address.getAddressLine(0) ?:
-                                        "${location.latitude}, ${location.longitude}"
-                            } else {
-                                locationText = "${location.latitude}, ${location.longitude}"
-                            }
-                        } catch (e: Exception) {
-                            locationText = "${location.latitude}, ${location.longitude}"
-                        }
-                    } else {
-                        locationText = "Location unavailable"
-                    }
-                }
-            } catch (e: Exception) {
-                locationText = "Error accessing location"
-            }
+        if (!hasPermission) {
+            // Request permission
+            locationPermissionLauncher.launch(locationPermission)
         } else {
-            locationText = "Location permission not granted"
+            // We have permission, get location
+            getLocation(context, fusedLocationClient) { location ->
+                locationText = location
+            }
         }
     }
 
-    // Get subject from tutor object
-    val subject = tutor.subject?.firstOrNull() ?: "General Tutoring"
+    // Get subject from tutor object - FIXED to ensure it's a String type
+    val subjectStr = when {
+        tutor.subject == null || tutor.subject.isEmpty() -> "General Tutoring"
+        else -> {
+//            // Get the first subject and explicitly convert to string
+//            val firstSubject = tutor.subject.firstOrNull()
+//            if (firstSubject is String) {
+//                firstSubject
+//            } else {
+//                firstSubject?.toString() ?: "General Tutoring"
+//            }
+            tutor.subject
+        }
+    }
 
     // Compile all booking information
     val bookingInfo = """
         TUTOR BOOKING CONFIRMATION
         -------------------------
         Tutor: ${tutor.name}
-        Subject: $subject
+        Subject: $subjectStr
         Date & Time: $currentDateTime
         Location: $locationText
         -------------------------
@@ -718,9 +731,22 @@ fun BookButtonWithQR(
                 containerColor = Color.White
             ),
             onClick = {
-                onBook()
-                showQRCode = true
-                // Navigation happens after QR is closed
+                // Check if we have location permission now before showing QR
+                val locationPermission = android.Manifest.permission.ACCESS_FINE_LOCATION
+                val hasPermission = ContextCompat.checkSelfPermission(context, locationPermission) ==
+                        PackageManager.PERMISSION_GRANTED
+
+                if (hasPermission && locationText == "Fetching location...") {
+                    // Try to get location one more time before showing QR
+                    getLocation(context, fusedLocationClient) { location ->
+                        locationText = location
+                        onBook()
+                        showQRCode = true
+                    }
+                } else {
+                    onBook()
+                    showQRCode = true
+                }
             }
         ) {
             Text(
@@ -737,7 +763,7 @@ fun BookButtonWithQR(
             qrContent = bookingInfo,
             bookingReference = bookingReference,
             tutorName = tutor.name,
-            subject = subject.toString(),
+            subject = subjectStr,  // FIXED: Now using a guaranteed String type
             dateTime = currentDateTime,
             location = locationText,
             onDismiss = {
@@ -748,6 +774,100 @@ fun BookButtonWithQR(
                 shareQRCode(context, bitmap, "Booking Confirmation: $bookingReference")
             }
         )
+    }
+}
+
+// Helper function to get location
+private fun getLocation(
+    context: Context,
+    fusedLocationClient: FusedLocationProviderClient,
+    onLocationResult: (String) -> Unit
+) {
+    try {
+        val locationRequest = LocationRequest.create().apply {
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+            numUpdates = 1  // Just get one update
+        }
+
+        val locationCallback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                fusedLocationClient.removeLocationUpdates(this)  // Stop updates after getting location
+
+                val location = result.lastLocation
+                if (location != null) {
+                    // Use Geocoder to get address from coordinates
+                    val geocoder = Geocoder(context, Locale.getDefault())
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            // Use the new API for Android 13+
+                            geocoder.getFromLocation(location.latitude, location.longitude, 1) { addresses ->
+                                if (addresses.isNotEmpty()) {
+                                    val address = addresses[0]
+                                    onLocationResult(address.getAddressLine(0) ?:
+                                    "${location.latitude}, ${location.longitude}")
+                                } else {
+                                    onLocationResult("${location.latitude}, ${location.longitude}")
+                                }
+                            }
+                        } else {
+                            // Use the older API for Android 12 and below
+                            @Suppress("DEPRECATION")
+                            val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                            if (addresses != null && addresses.isNotEmpty()) {
+                                val address = addresses[0]
+                                onLocationResult(address.getAddressLine(0) ?:
+                                "${location.latitude}, ${location.longitude}")
+                            } else {
+                                onLocationResult("${location.latitude}, ${location.longitude}")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("Location", "Geocoder error: ${e.message}")
+                        onLocationResult("${location.latitude}, ${location.longitude}")
+                    }
+                } else {
+                    onLocationResult("Location unavailable")
+                }
+            }
+        }
+
+        // Request location updates
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
+            locationCallback,
+            Looper.getMainLooper()
+        )
+
+        // Also try lastLocation as a fallback
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            if (location != null) {
+                // Use Geocoder to get address from coordinates
+                val geocoder = Geocoder(context, Locale.getDefault())
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        // Already handled in callback, this is just a fallback
+                    } else {
+                        @Suppress("DEPRECATION")
+                        val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                        if (addresses != null && addresses.isNotEmpty()) {
+                            val address = addresses[0]
+                            onLocationResult(address.getAddressLine(0) ?:
+                            "${location.latitude}, ${location.longitude}")
+                        } else {
+                            // This won't override the callback if it works
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Ignore errors in fallback
+                }
+            }
+        }
+    } catch (e: SecurityException) {
+        Log.e("Location", "Security exception: ${e.message}")
+        onLocationResult("Location access denied")
+    } catch (e: Exception) {
+        Log.e("Location", "Error: ${e.message}")
+        onLocationResult("Error accessing location")
     }
 }
 @Composable
@@ -764,11 +884,13 @@ fun QRCodeDialog(
     val qrBitmap = remember(qrContent) {
         generateQRCode(content = qrContent, size = 800)
     }
+    val scrollState = rememberScrollState()
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(max = 600.dp)
                 .wrapContentHeight()
                 .padding(16.dp),
             shape = RoundedCornerShape(16.dp),
@@ -777,7 +899,9 @@ fun QRCodeDialog(
             Column(
                 modifier = Modifier
                     .padding(24.dp)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .verticalScroll(scrollState)
+                    ,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
