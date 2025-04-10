@@ -468,7 +468,7 @@ fun SignUpScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = "SignUp",
+                            text = "Sign Up",
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -494,8 +494,6 @@ fun SignUpScreen(
                     .padding(it.calculateTopPadding())
                     .verticalScroll(rememberScrollState())
             ) {
-
-
                 Column(
                     modifier = Modifier.fillMaxSize()
                 ) {
@@ -522,7 +520,9 @@ fun SignUpScreen(
                             imeAction = ImeAction.Done
                         )
                     )
-                    Spacer(modifier = Modifier.height(12.dp) )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
                     Text(
                         text = "Contact Number",
                         fontSize = 20.sp,
@@ -546,7 +546,9 @@ fun SignUpScreen(
                             imeAction = ImeAction.Done
                         )
                     )
-                    Spacer(modifier = Modifier.height(12.dp) )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
                     Text(
                         text = "Gmail",
                         fontSize = 20.sp,
@@ -554,9 +556,7 @@ fun SignUpScreen(
                     )
                     OutlinedTextField(
                         value = gmail.value,
-                        onValueChange = {
-                            gmail.value = it
-                                        },
+                        onValueChange = { gmail.value = it },
                         enabled = true,
                         placeholder = { Text(text = "Gmail Id") },
                         leadingIcon = {
@@ -574,6 +574,7 @@ fun SignUpScreen(
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
+
                     Text(
                         text = "Password",
                         fontSize = 20.sp,
@@ -599,57 +600,53 @@ fun SignUpScreen(
                         visualTransformation = PasswordVisualTransformation()
                     )
 
-//                      CREATE ACCOUNT BUTTON
+                    // CREATE ACCOUNT BUTTON
                     Spacer(modifier = Modifier.height(12.dp))
+
                     Button(
                         onClick = {
-                                val user: User= User(
-                                    name = Name.value,
-                                    email = gmail.value,
-                                    password = password.value,
-                                    contact = Contact.value,
-                                    role = "user",
-                                    image = "",
-                                    id = ""
-                                )
-                                Log.d("SAVE USER", Name.value)
-                               signUpAndSignIn(gmail.value, password.value, user)
-//                                navController.navigate("home")
-
+                            val user: User = User(
+                                name = Name.value,
+                                email = gmail.value,
+                                password = password.value,
+                                contact = Contact.value,
+                                role = "user",
+                                image = "",
+                                id = ""
+                            )
+                            Log.d("SAVE USER", Name.value)
+                            signUpAndSignIn(gmail.value, password.value, user)
+                            // navController.navigate("home")
                         },
                         enabled = validateFields(),
                         shape = RoundedCornerShape(10.dp),
                         contentPadding = ButtonDefaults.ContentPadding,
-                        modifier = Modifier
-                            .width(300.dp)
+                        modifier = Modifier.width(300.dp)
                     ) {
                         Text(
                             text = "Create Account",
                             letterSpacing = 1.sp
                         )
                     }
-//                    Spacer(modifier = Modifier.height(12.dp))
+
                     Text(
                         text = "                   OR",
                         fontSize = 20.sp,
                         modifier = Modifier.padding(12.dp)
                     )
-//                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(
 
+                    Button(
                         onClick = {
                             onSignInClick()
-//                            navController.navigate("home")
+                            // navController.navigate("home")
                         },
                         shape = RoundedCornerShape(10.dp),
                         contentPadding = ButtonDefaults.ContentPadding,
-                        modifier = Modifier
-                            .width(300.dp)
+                        modifier = Modifier.width(300.dp)
                     ) {
                         Text(
                             text = "Login with Google",
                             letterSpacing = 1.sp
-
                         )
                     }
                 }

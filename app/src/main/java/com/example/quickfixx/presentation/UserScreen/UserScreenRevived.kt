@@ -40,12 +40,16 @@ import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.PersonPin
 import androidx.compose.material.icons.rounded.ArrowForwardIos
+import androidx.compose.material.icons.rounded.AttachMoney
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.GTranslate
 import androidx.compose.material.icons.rounded.Logout
+import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.Person4
 import androidx.compose.material.icons.rounded.PersonPin
 import androidx.compose.material.icons.rounded.Reviews
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -90,6 +94,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.quickfixx.R
@@ -119,12 +124,16 @@ fun UserCard(
     navController: NavController,
     userData : UserData?,
     onSignOut: () -> Unit,
-    user : User?,
+    tutor: Tutor?,
+    evm: ElectricianViewModel,
     userViewModel: UserViewModel,
     viewModel: SignInViewModel
 ){
 //    val userState by viewModel.state.collectAsState()
     val user = viewModel.state.value.user
+    val selectedTutor = evm.state.collectAsStateWithLifecycle().value.tutor
+    Log.d("User card", selectedTutor?.earnings.toString())
+
     user?.image?.let { Log.d("USERIMAGE", it) }
 //    val user = userData?.let { viewModel.getUser(it.email) }
     val username = remember {
@@ -549,6 +558,106 @@ fun UserCard(
                     }
 
             }
+                if (user?.role == "tutor") {
+                    Divider()
+                    val showEarningsDialog = remember { mutableStateOf(false) }
+
+                    // Show dialog if showEarningsDialog is true
+                    if (showEarningsDialog.value) {
+                        AlertDialog(
+                            onDismissRequest = { showEarningsDialog.value = false },
+                            title = { Text("Your Earnings") },
+                            text = {
+                                Column {
+                                    Text("Current Earnings: Rs. ${selectedTutor?.earnings ?: 0}")
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Fee per session: Rs. ${selectedTutor?.fees ?: 0}")
+                                }
+                            },
+                            confirmButton = {
+                                Button(onClick = { showEarningsDialog.value = false }) {
+                                    Text("Close")
+                                }
+                            }
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .background(Color.White)
+                            .clip(RoundedCornerShape(20.dp))
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .padding(5.dp)
+                                .fillMaxWidth()
+                                .clickable {
+                                    // Show dialog instead of navigating
+                                    showEarningsDialog.value = true
+                                }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.AttachMoney,
+                                contentDescription = "Earnings",
+                            )
+                            Spacer(
+                                modifier = Modifier
+                                    .padding(10.dp)
+                            )
+                            Text(
+                                text = "Your Earnings"
+                            )
+                            Spacer(
+                                modifier = Modifier
+                                    .padding(vertical = 10.dp)
+                                    .padding(horizontal = 75.dp)
+                            )
+                            Icon(
+                                imageVector = Icons.Rounded.ArrowForwardIos,
+                                contentDescription = null,
+                            )
+                        }
+                    }
+                    Divider()
+                    Box(
+                        modifier = Modifier
+                            .background(Color.White)
+                            .clip(RoundedCornerShape(20.dp))
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .padding(5.dp)
+                                .fillMaxWidth()
+                                .clickable {
+                                    // Navigate to schedule management screen
+                                    navController.navigate("tutor_schedule")
+                                }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Schedule,
+                                contentDescription = "Schedule",
+                            )
+                            Spacer(
+                                modifier = Modifier
+                                    .padding(10.dp)
+                            )
+                            Text(
+                                text = "Manage Schedule"
+                            )
+                            Spacer(
+                                modifier = Modifier
+                                    .padding(vertical = 10.dp)
+                                    .padding(horizontal = 65.dp)
+                            )
+                            Icon(
+                                imageVector = Icons.Rounded.ArrowForwardIos,
+                                contentDescription = null,
+                            )
+                        }
+                    }
+                }
             }
             Column(
                 modifier = Modifier
@@ -1292,19 +1401,23 @@ fun UpdateTutorProfileScreen(
                 notification.value = "Profile updated successfully"
                 navController.popBackStack()
                 if (user != null) {
-                    electricianViewModel.updateTutor(
-                        name = name,
-                        userId = user.id.toIntOrNull() ?: 0,
-                        contact = user.contact,
-                        email = user.email,
-                        subject = subjects[selectedSubject] ?: tutorData?.subject ?: "",
-                        fees = fees.toIntOrNull() ?: tutorData?.fees ?: 0,
-                        bio = bio,
-                        experience = experience.toIntOrNull() ?: tutorData?.experience ?: 0,
-                        availability = availability,
-                        image = imageUri.value,
-                        tutorId = tutorData?.id ?: 0  // This is the ID of the tutor record to update
-                    )
+                    if (tutorData != null) {
+                        electricianViewModel.updateTutor(
+                            name = name,
+                            userId = user.id.toIntOrNull() ?: 0,
+                            contact = user.contact,
+                            email = user.email,
+                            subject = subjects[selectedSubject] ?: tutorData?.subject ?: "",
+                            fees = fees.toIntOrNull() ?: tutorData?.fees ?: 0,
+                            bio = bio,
+                            experience = experience.toIntOrNull() ?: tutorData?.experience ?: 0,
+                            availability = availability,
+                            image = imageUri.value,
+                            rating = tutorData.rating,
+                            earnings = tutorData.earnings+0,
+                            tutorId = tutorData?.id ?: 0  // This is the ID of the tutor record to update
+                        )
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth()
@@ -1313,62 +1426,3 @@ fun UpdateTutorProfileScreen(
         }
     }
 }
-
-//fun saveImageToLocalStorage(context: Context, uri: Uri): String {
-//    try {
-//        // Define the directory path
-//        val profileDirectory = File(Environment.getExternalStorageDirectory(), "QuickFixx_App/profile")
-//        if (!profileDirectory.exists()) profileDirectory.mkdirs()
-//
-//        // Create file with a unique name
-//        val file = File(profileDirectory, "profile_${System.currentTimeMillis()}.jpg")
-//
-//        // Copy data from selected image URI to the new file
-//        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-//            FileOutputStream(file).use { outputStream ->
-//                inputStream.copyTo(outputStream)
-//            }
-//        }
-//
-//        return file.absolutePath
-//    } catch (e: IOException) {
-//        e.printStackTrace()
-//        return ""
-//    }
-//}
-
-//fun saveImageToLocalStorage(context: Context, uri: Uri): String {
-//    try {
-//        // Add debugging log
-//        Log.d("ProfileImage", "Saving image from URI: $uri")
-//
-//        // Use app-specific storage instead of external storage
-//        val profileDirectory = File(context.getExternalFilesDir(null), "QuickFixx_App/profile")
-//        if (!profileDirectory.exists()) {
-//            val dirCreated = profileDirectory.mkdirs()
-//            Log.d("ProfileImage", "Directory created: $dirCreated at ${profileDirectory.absolutePath}")
-//        }
-//
-//        // Create file with a unique name
-//        val fileName = "profile_${System.currentTimeMillis()}.jpg"
-//        val file = File(profileDirectory, fileName)
-//        Log.d("ProfileImage", "Saving to file: ${file.absolutePath}")
-//
-//        // Copy data from selected image URI to the new file
-//        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-//            FileOutputStream(file).use { outputStream ->
-//                val bytesCopied = inputStream.copyTo(outputStream)
-//                Log.d("ProfileImage", "Bytes copied: $bytesCopied")
-//            }
-//        } ?: run {
-//            Log.e("ProfileImage", "Failed to open input stream from $uri")
-//            return ""
-//        }
-//
-//        Log.d("ProfileImage", "Successfully saved image to: ${file.absolutePath}")
-//        return file.absolutePath
-//    } catch (e: Exception) {
-//        Log.e("ProfileImage", "Error saving image", e)
-//        return ""
-//    }
-//}

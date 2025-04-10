@@ -80,6 +80,7 @@ dependencies {
     implementation("com.google.firebase:firebase-database:21.0.0")
     implementation("com.google.firebase:firebase-storage:21.0.1")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("androidx.test.services:storage:1.4.2")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

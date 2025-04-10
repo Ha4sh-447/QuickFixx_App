@@ -142,7 +142,7 @@ fun Messages(
 
                 Box(
                     modifier = Modifier.height(70.dp)
-                        .background(Color.Red)
+                        .background(Color.Gray)
                         .fillMaxWidth()
                         .padding(top = 15.dp, start = 20.dp, bottom = 15.dp, end = 20.dp)
                 ) {

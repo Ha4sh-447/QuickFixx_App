@@ -234,7 +234,7 @@ fun ProviderDetails(navController: NavController,
                     textDecoration = TextDecoration.Underline
                 )
                 if (selectedTutor != null) {
-                    CardElevation1(selectedTutor.name, selectedTutor.rating, selectedTutor, navController, onBook)
+                    CardElevation1(selectedTutor.name, selectedTutor.rating, selectedTutor, navController, electricianViewModel = evm, onBook)
                 }
                 if (selectedTutor != null) {
                     Summary(selectedTutor.name, selectedTutor.rating, selectedTutor.contact, selectedTutor.fees, selectedTutor.experience, true, navController)
@@ -376,7 +376,7 @@ fun SummaryItem(icon: ImageVector, text: String) {
 }
 
 @Composable
-fun CardElevation1(name: String, rating: Float, tutor: Tutor, navController: NavController, onBook: () -> Unit) {
+fun CardElevation1(name: String, rating: Float, tutor: Tutor, navController: NavController, electricianViewModel: ElectricianViewModel, onBook: () -> Unit) {
     val context = LocalContext.current
     Surface(
         shape = RoundedCornerShape(16.dp),
@@ -439,30 +439,30 @@ fun CardElevation1(name: String, rating: Float, tutor: Tutor, navController: Nav
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(start = 1.dp)
                             ) {
-                                AssistChip(
-                                    onClick = { Log.d("Assist chip", "hello world") },
-                                    label = { Text("Verified") },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Filled.Check,
-                                            contentDescription = "Localized description",
-                                            Modifier.size(AssistChipDefaults.IconSize)
-                                        )
-                                    }
-                                )
+//                                AssistChip(
+//                                    onClick = { Log.d("Assist chip", "hello world") },
+//                                    label = { Text("Verified") },
+//                                    leadingIcon = {
+//                                        Icon(
+//                                            Icons.Filled.Check,
+//                                            contentDescription = "Localized description",
+//                                            Modifier.size(AssistChipDefaults.IconSize)
+//                                        )
+//                                    }
+//                                )
 
-                                AssistChip(
-                                    onClick = { Log.d("Assist chip", "hello world") },
-                                    label = { Text("Great Value") },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Filled.Check,
-                                            contentDescription = "Localized description",
-                                            Modifier.size(AssistChipDefaults.IconSize)
-                                        )
-                                    },
-                                    modifier = Modifier.padding(start = 8.dp)
-                                )
+//                                AssistChip(
+//                                    onClick = { Log.d("Assist chip", "hello world") },
+//                                    label = { Text("Great Value") },
+//                                    leadingIcon = {
+//                                        Icon(
+//                                            Icons.Filled.Check,
+//                                            contentDescription = "Localized description",
+//                                            Modifier.size(AssistChipDefaults.IconSize)
+//                                        )
+//                                    },
+//                                    modifier = Modifier.padding(start = 8.dp)
+//                                )
                             }
 
                             Spacer(modifier = Modifier.height(2.dp))
@@ -504,13 +504,13 @@ fun CardElevation1(name: String, rating: Float, tutor: Tutor, navController: Nav
 
                             Spacer(modifier = Modifier.height(4.dp))
 
-                            // Add description text
-                            Text(
-                                text = "This is a description of the service provider...",
-                                fontSize = 12.sp,
-                                color = Color.Gray,
-                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
-                            )
+//                            // Add description text
+//                            Text(
+//                                text = "This is a description of the service provider...",
+//                                fontSize = 12.sp,
+//                                color = Color.Gray,
+//                                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+//                            )
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -518,7 +518,7 @@ fun CardElevation1(name: String, rating: Float, tutor: Tutor, navController: Nav
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 // Book button with QR code functionality
-                                BookButtonWithQR(navController, tutor=tutor, onBook = onBook)
+                                BookButtonWithQR(navController, tutor=tutor, electricianViewModel = electricianViewModel, onBook = onBook)
 
                                 // Call button
                                 OutlinedButton(
@@ -639,6 +639,7 @@ data class Review(val username: String, val rating: Int, val comment: String)
 fun BookButtonWithQR(
     navController: NavController,
     onBook: () -> Unit,
+    electricianViewModel: ElectricianViewModel,
     tutor: Tutor  // Only keep tutor parameter to access all details
 ) {
     var showQRCode by remember { mutableStateOf(false) }
@@ -687,20 +688,14 @@ fun BookButtonWithQR(
         }
     }
 
-    // Get subject from tutor object - FIXED to ensure it's a String type
     val subjectStr = when {
         tutor.subject == null || tutor.subject.isEmpty() -> "General Tutoring"
         else -> {
-//            // Get the first subject and explicitly convert to string
-//            val firstSubject = tutor.subject.firstOrNull()
-//            if (firstSubject is String) {
-//                firstSubject
-//            } else {
-//                firstSubject?.toString() ?: "General Tutoring"
-//            }
             tutor.subject
         }
     }
+
+    tutor.earnings += tutor.fees
 
     // Compile all booking information
     val bookingInfo = """
@@ -709,6 +704,7 @@ fun BookButtonWithQR(
         Tutor: ${tutor.name}
         Subject: $subjectStr
         Date & Time: $currentDateTime
+        Fees: ${tutor.fees}
         Location: $locationText
         -------------------------
         Booking Ref: $bookingReference
@@ -735,16 +731,37 @@ fun BookButtonWithQR(
                 val locationPermission = android.Manifest.permission.ACCESS_FINE_LOCATION
                 val hasPermission = ContextCompat.checkSelfPermission(context, locationPermission) ==
                         PackageManager.PERMISSION_GRANTED
+//                Enter function to update tutor here
+                tutor.earnings += tutor.fees
+                electricianViewModel.updateTutor(
+                    name = tutor.name,
+//                    userId = user.id.toIntOrNull() ?: 0,
+                    userId = tutor.uid,
+                    contact = tutor.contact,
+                    email = tutor.email,
+                    subject =  tutor.subject,
+                    fees = tutor.fees,
+                    bio = tutor.bio,
+                    experience = tutor.experience,
+                    availability = tutor.availability,
+                    image = tutor.image,
+                    rating = tutor.rating,
+                    earnings = tutor.earnings,
+                    tutorId = tutor.id  // This is the ID of the tutor record to update
+                )
+                Log.d("INFO", "UPDATED TUTOR INFO")
 
                 if (hasPermission && locationText == "Fetching location...") {
                     // Try to get location one more time before showing QR
                     getLocation(context, fusedLocationClient) { location ->
                         locationText = location
                         onBook()
+//                        electricianViewModel.updateTutor(tutor)
                         showQRCode = true
                     }
                 } else {
                     onBook()
+//                    electricianViewModel.updateSelectedTutor(tutor)
                     showQRCode = true
                 }
             }

@@ -30,6 +30,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.quickfixx.ViewModels.ElectricianViewModel
 import com.example.quickfixx.domain.model.Tutor
 import com.example.quickfixx.domain.model.User
+import com.example.quickfixx.presentation.HomePage.HomePage
 import com.example.quickfixx.presentation.HomePage.HomeVM
 import com.example.quickfixx.presentation.Messages
 import com.example.quickfixx.presentation.UserScreen.ProfileScreen
@@ -37,6 +38,7 @@ import com.example.quickfixx.presentation.UserScreen.UpdateTutorProfileScreen
 import com.example.quickfixx.presentation.UserScreen.UserCard
 import com.example.quickfixx.presentation.UserScreen.UserViewModel
 import com.example.quickfixx.presentation.sign_in.GoogleAuthUiClient
+import com.example.quickfixx.presentation.sign_in.LoginScreen
 import com.example.quickfixx.presentation.sign_in.SignInViewModel
 import com.example.quickfixx.screens.auth.Electrician.ElectricianData
 import com.example.quickfixx.screens.auth.ProviderDetails
@@ -120,7 +122,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         } else {
-                            navController.navigate("sign_up") {
+                            navController.navigate("login") {
                                 popUpTo(0)
                             }
                         }
@@ -129,6 +131,14 @@ class MainActivity : ComponentActivity() {
                     NavHost(navController = navController, startDestination = "welcome") {
                         composable("welcome"){
                             WelcomePageScreen(navController = navController)
+                        }
+                        composable("login") {
+                            val state by viewModel.state.collectAsStateWithLifecycle()
+                            LoginScreen(
+                                navController = navController,
+                                viewModel = viewModel,
+                                state
+                            )
                         }
 
                         composable("edit_profile"){
@@ -146,7 +156,6 @@ class MainActivity : ComponentActivity() {
                                 tutorState = tutorData
                             )
                         }
-
                         composable("electricians/{tabIndex}") { backStackEntry ->
                             val arguments = requireNotNull(backStackEntry.arguments)
                             val tabIndex = arguments.getString("tabIndex")?.toIntOrNull() ?: 0
@@ -158,6 +167,8 @@ class MainActivity : ComponentActivity() {
 //                            ProfileScreen(onGoBack = { })
                             val userViewModel: UserViewModel = hiltViewModel()
                             val state by viewModel.state.collectAsStateWithLifecycle()
+                            val tutor by eVM.state.collectAsStateWithLifecycle()
+
                             UserCard(navController = navController,
                                 userData = state.userData,
                                 onSignOut = {
@@ -175,7 +186,8 @@ class MainActivity : ComponentActivity() {
 
                                     }
                                 },
-                                user,
+                                tutor.tutor,
+                                evm = eVM,
                                 userViewModel,
                                 viewModel
                                 )
@@ -187,10 +199,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("profile") {
-                            val homeVM: HomeVM = hiltViewModel()
-                            val title by homeVM.title.collectAsStateWithLifecycle()
-
-//                            val EviewModel: ElectricianViewModel = hiltViewModel()
+//                            val homeVM: HomeVM = hiltViewModel()
                             val tutor by eVM.state.collectAsStateWithLifecycle()
 
                             ProviderDetails(
@@ -293,20 +302,17 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        composable("home"){
-//                            val homeVM = hiltViewModel<HomeVM>()
+                        composable("home") {
                             val homeState by homeVM.homeState.collectAsStateWithLifecycle()
                             val title by homeVM.title.collectAsStateWithLifecycle()
                             val state by viewModel.state.collectAsStateWithLifecycle()
-                            com.example.quickfixx.presentation.HomePage.HomePage(
+
+                            HomePage(
                                 navController = navController,
-                                state = state,
                                 userData = googleAuthUiClient.getSignedInUser(),
-                                HViewModel = viewModel,
                                 homeVM = homeVM,
-                                onTitleChange = {newTitle -> homeVM.currTitle(newTitle)},
-                                title = title,
-                                homeState = homeState,
+                                onTitleChange = { newTitle -> homeVM.currTitle(newTitle) },
+                                state = state
                             ) {
                                 lifecycleScope.launch {
                                     googleAuthUiClient.signOut()
@@ -319,11 +325,9 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate("sign_up") {
                                         popUpTo(0)
                                     }
-
                                 }
                             }
                         }
-
                     }
                 }
             }

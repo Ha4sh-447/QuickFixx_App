@@ -79,46 +79,52 @@ class ElectricianViewModel @Inject constructor(
 
     fun updateTutor(
         name: String,
-        userId: Int,
+        userId: Int,  // Keep parameter name as is for consistency
         contact: String,
         email: String,
         subject: String,
         fees: Int,
         bio: String,
+        earnings: Int,
         experience: Int,
         availability: String,
         image: String,
+        rating: Float,
         tutorId: Int
     ) {
         viewModelScope.launch {
             try {
-                // Create JSON for request body
+                Log.d("INFO", "STARTING UPDATE TUTOR - tutorId: $tutorId")
+
+                // Create JSON with correct field names
                 val tutorJson = JSONObject().apply {
                     put("name", name)
-                    put("userId", userId)
+                    put("uid", userId)  // Changed from "userId" to "uid" to match server
                     put("contact", contact)
                     put("email", email)
                     put("subject", subject)
                     put("fees", fees)
                     put("bio", bio)
+                    put("earnings", earnings)
                     put("experience", experience)
                     put("availability", availability)
                     put("image", image)
+                    put("rating", rating)
+                    // The server might also expect a "rating" field
+                    // Add it if necessary: put("rating", 0)
                 }
 
-                // Convert to RequestBody
+                Log.d("INFO", "Request payload: ${tutorJson.toString()}")
+
                 val requestBody = tutorJson.toString()
                     .toRequestBody("application/json".toMediaTypeOrNull())
 
-                // Call API
-                tutorRepo.updateTutorProfile(tutorId.toString(), requestBody)
-
-                // Update local state if needed
-                // You might want to refresh your tutor data here
+                val response = tutorRepo.updateTutorProfile(tutorId.toString(), requestBody)
+                Log.d("INFO", "UPDATE TUTOR FROM VM Function")
 
             } catch (e: Exception) {
-                // Handle errors
-                Log.e("ElectricianViewModel", "Error updating tutor: ${e.message}")
+                Log.e("INFO", "Error updating tutor: ${e.message}")
+                Log.e("INFO", "Stack trace: ${e.stackTraceToString()}")
             }
         }
     }
@@ -152,7 +158,7 @@ class ElectricianViewModel @Inject constructor(
 
 
     fun saveTutor(name:String, uid: Int, contact: String, email: String, subject: String, fees: Int, bio: String, experience: Int, availability: String, image: String){
-        val tutorBody = Tutor(0, name, uid, contact, email, subject, fees, 0f, bio, experience, availability, image, role="tutor")
+        val tutorBody = Tutor(0, name, uid, contact, email, subject, fees, 0f, bio, earnings = 0, experience, availability, image, role="tutor")
         Log.d("INFO FROM SAVE TUTOR", tutorBody.name)
 
         viewModelScope.launch {

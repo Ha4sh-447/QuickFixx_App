@@ -38,6 +38,7 @@ data class Tutor(
     val fees: Int,
     val rating: Float,
     val bio: String,
+    var earnings: Int,
     val experience: Int,
     val availability: String,
     val image: String,
@@ -53,6 +54,7 @@ data class Tutor(
             put("fees", fees)
             put("rating", rating)
             put("bio", bio)
+            put("earnings", earnings)
             put("experience", experience)
             put("availability", availability)
             put("image", image)

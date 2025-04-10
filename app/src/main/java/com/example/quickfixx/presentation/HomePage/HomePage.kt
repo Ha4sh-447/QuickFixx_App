@@ -80,14 +80,11 @@ data class BottomNavigationItem(
 fun HomePage(
     navController: NavController,
     userData: UserData?,
-    HViewModel: SignInViewModel,
     homeVM: HomeVM,
-    onTitleChange:(String) ->Unit,
+    onTitleChange: (String) -> Unit,
     state: SignInState,
-    title: String,
-    homeState: HomePageState,
-//    user : User?,
-    onSignOut: () -> Unit) {
+    onSignOut: () -> Unit
+) {
 
     val user = state.user
 
@@ -143,7 +140,10 @@ fun HomePage(
                     // Show sign-out button only if user is logged in
                     if (user != null || userData != null) {
                         IconButton(
-                            onClick = { onSignOut() },
+                            onClick = {
+//                                onSignOut()
+                                navController.navigate("login")
+                                      },
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ExitToApp,
